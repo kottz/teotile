@@ -1,3 +1,4 @@
+#![no_std]
 use anyhow::Result;
 
 use rand::Rng;
@@ -91,9 +92,12 @@ impl Input for TextInput {
         //let _ = stdin.lock().read_line(&mut line).unwrap();
         line = line.trim().to_string();
         match line.as_str() {
-            "left" => Some(GameCommand::Left),
-            "right" => Some(GameCommand::Right),
-            "select" => Some(GameCommand::Select),
+            "l" => Some(GameCommand::Left),
+            "r" => Some(GameCommand::Right),
+            "s" => Some(GameCommand::Select),
+            "q" => Some(GameCommand::Left),
+            "f" => Some(GameCommand::Right),
+            "w" => Some(GameCommand::Select),
             "quit" => Some(GameCommand::Quit),
             _ => {
                 println!("Invalid input");
@@ -158,10 +162,11 @@ impl Output for ConsoleOutput {
 // use of the states. Makes it more cleaner to move
 // the game into the winning state and then match
 // on that in the render function
+#[derive(Debug, PartialEq)]
 enum ConnectFourState {
     Start,
     Playing,
-    Win,
+    Win(Vec<(usize, usize)>),
     Finished,
 }
 
@@ -172,7 +177,7 @@ pub struct ConnectFour<I: Input, O: Output> {
     in_a_row: usize,
     active_player: Cell,
     active_col: usize,
-    finished: bool,
+    state: ConnectFourState,
 }
 
 impl<I: Input, O: Output> Game for ConnectFour<I, O> {
@@ -193,9 +198,9 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                     Ok(place) => {
                         println!("Placed at {:?}", place);
                         let win = self.check_win(place, self.in_a_row);
-                        if win.is_some() {
+                        if let Some((_, winning_line)) = win {
                             println!("Player {:?} wins!", self.active_player);
-                            self.finished = true;
+                            self.state = ConnectFourState::Win(winning_line);
                         }
                         self.active_player = match self.active_player {
                             Cell::PlayerX => Cell::PlayerO,
@@ -209,7 +214,7 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                 }
             }
             Some(GameCommand::Quit) => {
-                self.finished = true;
+                self.state = ConnectFourState::Finished;
                 //println!("Quitting");
                 std::process::exit(0);
             }
@@ -256,28 +261,60 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
         }
         //Later I want to make the outer loop handle all of the timings
         //Refactor this when you add a realtime game.
-        if self.finished {
-            let mut rng = rand::thread_rng();
-            for i in 0..30 {
+        match &self.state {
+            ConnectFourState::Start => {
+                //todo
+            }
+            ConnectFourState::Playing => {
+                //todo
+            }
+            ConnectFourState::Win(winning_line) => {
+                // reset color in active column!
                 for row in 0..self.board.size() {
                     for col in 0..self.board.size() {
-                        let rgb = RGB::new(
-                            rng.gen_range(0..=255),
-                            rng.gen_range(0..=255),
-                            rng.gen_range(0..=255),
-                        );
-                        render_board.set(col, row, rgb);
+                        if col == self.active_col && self.board.get(col, row) == Cell::Empty {
+                            let rgb = RGB::new(0, 0, 0);
+                            render_board.set(col, row, rgb);
+                        }
                     }
                 }
-                let start = Instant::now();
-                self.output.write(&render_board)?;
-                let elapsed = start.elapsed();
+                let mut rng = rand::thread_rng();
+                for _ in 0..20 {
+                    /*
+                    for row in 0..self.board.size() {
+                        for col in 0..self.board.size() {
+                            let rgb = RGB::new(
+                                rng.gen_range(0..=255),
+                                rng.gen_range(0..=255),
+                                rng.gen_range(0..=255),
+                            );
+                            render_board.set(col, row, rgb);
+                        }
+                    }
+                    */
+                    for (col, row) in winning_line {
+                        let rgb = RGB::new(rng.gen_range(0..=255), rng.gen_range(0..=255), rng.gen_range(0..=255));
+                        render_board.set(*col, *row, rgb);
+                    }
+                    //render the winning line separately
+                    /*
+                    for (col, row) in winning_line {
+                        let rgb = RGB::new(0, 0, 0);
+                        render_board.set(*col, *row, rgb);
+                    }*/
+                    let start = Instant::now();
+                    self.output.write(&render_board)?;
+                    let elapsed = start.elapsed();
 
-                let frame_time = std::time::Duration::from_millis(1000 / 10);
-                if elapsed < frame_time {
-                    std::thread::sleep(frame_time - elapsed);
+                    let frame_time = std::time::Duration::from_millis(1000 / 10);
+                    if elapsed < frame_time {
+                        std::thread::sleep(frame_time - elapsed);
+                    }
+                    println!();
                 }
-                println!();
+            }
+            ConnectFourState::Finished => {
+                //todo
             }
         }
 
@@ -309,7 +346,7 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
             in_a_row: 4,
             active_player: Cell::PlayerX,
             active_col: 0,
-            finished: false,
+            state: ConnectFourState::Start,
         }
     }
 
@@ -376,7 +413,7 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
 
     pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, Vec<(usize, usize)>)> {
         let (x, y) = last_move;
-        let directions = vec![
+        let directions = [
             (0, 1),  // up
             (1, 0),  // right
             (1, 1),  // up-right
@@ -575,7 +612,9 @@ mod tests {
         }
         game.board.set_cell(game.board.size() - 1, 0, Cell::PlayerO);
         // PlayerX should have won the game
-        assert_eq!(game.check_win((0, 1), 5), Some(Cell::PlayerO));
+        //(Option<(Cell, Vec<(usize, usize)>)> {
+        let (win_cell, _) = game.check_win((0, 1), 5).unwrap();
+        assert_eq!(win_cell, (Cell::PlayerO));
     }
 
     #[test]
@@ -590,7 +629,8 @@ mod tests {
             game.make_move(4, Cell::PlayerX).unwrap();
             game.make_move(6, Cell::PlayerO).unwrap();
         }
-        assert_eq!(game.check_win((4, 2), 5), Some(Cell::PlayerX));
+        let (win_cell, _) = game.check_win((4, 2), 5).unwrap();
+        assert_eq!(win_cell, (Cell::PlayerX));
     }
 
     #[test]
@@ -618,10 +658,12 @@ mod tests {
         }
 
         for i in 0..5 {
-            assert_eq!(game.check_win((i, i), 5), Some(Cell::PlayerO));
+            let (win_cell, _) = game.check_win((i, i), 5).unwrap();
+            assert_eq!(win_cell, (Cell::PlayerO));
         }
         for i in 0..5 {
-            assert_eq!(game.check_win((6 + i, 4 - i), 5), Some(Cell::PlayerX));
+            let (win_cell, _) = game.check_win((6 + i, 4 - i), 5).unwrap();
+            assert_eq!(win_cell, (Cell::PlayerX));
         }
     }
 }
@@ -636,11 +678,10 @@ fn game_loop() -> Result<()> {
         game.update()?;
         game.render()?;
 
-        if game.finished {
+        if let ConnectFourState::Win(_) = game.state {
             let text_in = TextInput {};
             let con_out = ColorOutput {};
             game = ConnectFour::new(text_in, con_out);
-            //break;
         }
     }
     //Ok(())
