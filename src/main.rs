@@ -1,4 +1,3 @@
-#![no_std]
 use anyhow::Result;
 
 use rand::Rng;
