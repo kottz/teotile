@@ -213,6 +213,7 @@ dependencies = [
  "anyhow",
  "crossterm",
  "rand",
+ "smallvec",
 ]
 
 [[package]]
