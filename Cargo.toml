@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.72"
 crossterm = "0.26.1"
+defmt = "0.3.5"
 rand = "0.8.5"
 smallvec = "1.11.0"

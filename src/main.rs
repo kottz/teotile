@@ -1,9 +1,9 @@
 #![no_std]
 use anyhow::Result;
 
-use rand::Rng;
+use smallvec::{SmallVec, smallvec};
 
-use std::time::Instant;
+use rand::Rng;
 
 use crossterm::{
     cursor::MoveLeft,
@@ -12,7 +12,8 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     ExecutableCommand,
 };
-use std::io::{stdout, Write};
+
+const GRID_SIZE: usize = 12;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Cell {
@@ -53,14 +54,14 @@ impl Input for ConsoleInput {
     fn read(&mut self) -> Option<GameCommand> {
         let event = read().unwrap();
 
-        println!("Event::{:?}\r", event);
+        //////println!("Event::{:?}\r", event);
 
         if event == Event::Key(KeyCode::Char('q').into()) {
-            println!("quit");
+            //println!("quit");
             return Some(GameCommand::Quit);
         }
         if event == Event::Key(KeyCode::Char('w').into()) {
-            println!("up");
+            //println!("up");
             return Some(GameCommand::Up);
         }
 
@@ -85,6 +86,7 @@ impl Input for TextInput {
     fn read(&mut self) -> Option<GameCommand> {
         let mut line = String::new();
         print!("Please enter direction: ");
+        defmt::info!("Please enter direction: ");
         stdout().flush().unwrap();
 
         let stdin = std::io::stdin();
@@ -100,7 +102,7 @@ impl Input for TextInput {
             "w" => Some(GameCommand::Select),
             "quit" => Some(GameCommand::Quit),
             _ => {
-                println!("Invalid input");
+                //println!("Invalid input");
                 None
             }
         }
@@ -151,9 +153,9 @@ impl Output for ConsoleOutput {
             for cell in row.iter() {
                 print!("{:?} ", cell);
             }
-            println!();
+            //println!();
         }
-        println!("");
+        //println!("");
         Ok(())
     }
 }
@@ -185,21 +187,21 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
         let command = self.input.read();
         match command {
             Some(GameCommand::Left) => {
-                println!("Go left");
+                //println!("Go left");
                 let _ = self.move_col(GameCommand::Left);
             }
             Some(GameCommand::Right) => {
-                println!("Go right");
+                //println!("Go right");
                 let _ = self.move_col(GameCommand::Right);
             }
             Some(GameCommand::Select) => {
-                println!("Go right");
+                //println!("Go right");
                 match self.make_move(self.active_col, self.active_player) {
                     Ok(place) => {
-                        println!("Placed at {:?}", place);
+                        //println!("Placed at {:?}", place);
                         let win = self.check_win(place, self.in_a_row);
                         if let Some((_, winning_line)) = win {
-                            println!("Player {:?} wins!", self.active_player);
+                            //println!("Player {:?} wins!", self.active_player);
                             self.state = ConnectFourState::Win(winning_line);
                         }
                         self.active_player = match self.active_player {
@@ -209,17 +211,16 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                         };
                     }
                     Err(e) => {
-                        println!("Error: {:?}", e);
+                        //println!("Error: {:?}", e);
                     }
                 }
             }
             Some(GameCommand::Quit) => {
                 self.state = ConnectFourState::Finished;
-                //println!("Quitting");
-                std::process::exit(0);
+                ////println!("Quitting");
             }
             Some(GameCommand::Up) => {
-                println!("Up");
+                //println!("Up");
             }
             _ => {}
         }
@@ -231,10 +232,10 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
     }
 
     fn render(&self) -> Result<()> {
-        println!(
-            "active col: {:?}, active player {:?}",
-            self.active_col, self.active_player
-        );
+        //println!(
+        //    "active col: {:?}, active player {:?}",
+        //    self.active_col, self.active_player
+        //);
         // I want to create a renderboard from the gameboard here and then just send it to the
         // output function. It will handle the final rendering to either the terminal or the LEDs.
 
@@ -302,15 +303,16 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                         let rgb = RGB::new(0, 0, 0);
                         render_board.set(*col, *row, rgb);
                     }*/
-                    let start = Instant::now();
-                    self.output.write(&render_board)?;
-                    let elapsed = start.elapsed();
 
-                    let frame_time = std::time::Duration::from_millis(1000 / 10);
-                    if elapsed < frame_time {
-                        std::thread::sleep(frame_time - elapsed);
-                    }
-                    println!();
+                    //let start = Instant::now();
+                    self.output.write(&render_board)?;
+                    //let elapsed = start.elapsed();
+
+                    //let frame_time = std::time::Duration::from_millis(1000 / 10);
+                    //if elapsed < frame_time {
+                    //    std::thread::sleep(frame_time - elapsed);
+                    //}
+                    //println!();
                 }
             }
             ConnectFourState::Finished => {
@@ -382,13 +384,13 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
                 self.board.set(x, y, player);
                 place = (x, y);
             }
-            //println!("x: {}, y: {}", x, y);
+            ////println!("x: {}, y: {}", x, y);
         }
         Ok(place)
     }
 
-    fn check_line(&self, x: i32, y: i32, dx: i32, dy: i32, player: Cell, in_a_row: usize) -> Option<Vec<(usize, usize)>> {
-        let mut positions = Vec::new();
+    fn check_line(&self, x: i32, y: i32, dx: i32, dy: i32, player: Cell, in_a_row: usize) -> Option<SmallVec<[(usize, usize); GRID_SIZE]>> {
+        let mut positions = SmallVec::<[(usize, usize); GRID_SIZE]>::new();
 
         for i in -(in_a_row as i32 - 1)..(in_a_row as i32) {
             let nx = x + i * dx;
@@ -411,7 +413,7 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         None
     }
 
-    pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, Vec<(usize, usize)>)> {
+    pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, SmallVec<[(usize, usize); in_a_row]>)> {
         let (x, y) = last_move;
         let directions = [
             (0, 1),  // up
@@ -427,7 +429,7 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
 
         for (dx, dy) in directions {
             if let Some(winning_line) = self.check_line(x as i32, y as i32, dx, dy, player, in_a_row) {
-                println!("Winning line: {:?}", winning_line);
+                ////println!("Winning line: {:?}", winning_line);
                 return Some((player, winning_line));
             }
         }
@@ -497,14 +499,14 @@ impl GameBoard {
         for row in self.cells.iter() {
             for cell in row.iter() {
                 match cell {
-                    Cell::Empty => print!(". "),
-                    Cell::PlayerX => print!("X "),
-                    Cell::PlayerO => print!("O "),
+                    Cell::Empty => {}//print!(". "),
+                    Cell::PlayerX => {}//print!("X "),
+                    Cell::PlayerO => {}//print!("O "),
                 }
             }
-            println!();
+            //println!();
         }
-        println!("");
+        //println!("");
     }
     /*
         pub fn map_as_rgb(&self) -> Vec<Vec<RGB>> {
@@ -530,9 +532,9 @@ impl GameBoard {
                         Cell::PlayerO => print!("{:?} ", RGB::new(0, 0, 255)),
                     }
                 }
-                println!();
+                //println!();
             }
-            println!();
+            //println!();
         }
     */
 }
@@ -693,7 +695,7 @@ fn game_loop() -> Result<()> {
         .execute(ResetColor)?;
     let mut active_column = 0;*/
 
-    //println!("");
+    ////println!("");
     //Ok(())
 }
 
@@ -703,7 +705,7 @@ fn main() -> Result<()> {
     let con_out = ConsoleOutput {};
     let mut game = ConnectFour::new(con_in, con_out);
     let win = game.check_win((0, 0), 4);
-    println!("win: {:?}", win);
+    //println!("win: {:?}", win);
     for i in 0..5 {
         game.make_move(i, Cell::PlayerX).unwrap();
         game.make_move(i, Cell::PlayerO).unwrap();
@@ -722,7 +724,7 @@ fn main() -> Result<()> {
     game.make_move(2, Cell::PlayerX).unwrap();
     game.make_move(2, Cell::PlayerO).unwrap();
     let win = game.check_win((0, 0), 5);
-    println!("win: {:?}", win);
+    //println!("win: {:?}", win);
     /*
         game.make_move(0, Cell::PlayerX).unwrap();
         game.make_move(0, Cell::PlayerO).unwrap();
@@ -746,7 +748,7 @@ fn main() -> Result<()> {
     let _ = game.make_move(1, Cell::PlayerX);
     game.board.print();
     let win = game.check_win((3, 0), 2);
-    println!("win: {:?}", win);
+    //println!("win: {:?}", win);
 
     Ok(())
 }
