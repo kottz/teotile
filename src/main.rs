@@ -1,4 +1,5 @@
-#![no_std]
+//#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 use anyhow::Result;
 
 use smallvec::{SmallVec, smallvec};
@@ -12,6 +13,9 @@ use crossterm::{
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     ExecutableCommand,
 };
+
+#[cfg(feature = "std")]
+use std::io::{stdout, Write};
 
 const GRID_SIZE: usize = 12;
 
@@ -86,7 +90,6 @@ impl Input for TextInput {
     fn read(&mut self) -> Option<GameCommand> {
         let mut line = String::new();
         print!("Please enter direction: ");
-        defmt::info!("Please enter direction: ");
         stdout().flush().unwrap();
 
         let stdin = std::io::stdin();
@@ -168,10 +171,9 @@ impl Output for ConsoleOutput {
 enum ConnectFourState {
     Start,
     Playing,
-    Win(Vec<(usize, usize)>),
+    Win(SmallVec<[(usize, usize); GRID_SIZE]>),
     Finished,
 }
-
 pub struct ConnectFour<I: Input, O: Output> {
     input: I,
     output: O,
@@ -339,6 +341,7 @@ impl RGB {
 
 type RenderBoard = Board<RGB>;
 
+
 impl<I: Input, O: Output> ConnectFour<I, O> {
     pub fn new(input: I, output: O) -> Self {
         Self {
@@ -413,7 +416,7 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         None
     }
 
-    pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, SmallVec<[(usize, usize); in_a_row]>)> {
+    pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, SmallVec<[(usize, usize); GRID_SIZE]>)> {
         let (x, y) = last_move;
         let directions = [
             (0, 1),  // up
