@@ -30,21 +30,16 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
         let command = self.input.read();
         match command {
             Some(GameCommand::Left) => {
-                //println!("Go left");
                 let _ = self.move_col(GameCommand::Left);
             }
             Some(GameCommand::Right) => {
-                //println!("Go right");
                 let _ = self.move_col(GameCommand::Right);
             }
             Some(GameCommand::Select) => {
-                //println!("Go right");
                 match self.make_move(self.active_col, self.active_player) {
                     Ok(place) => {
-                        //println!("Placed at {:?}", place);
                         let win = self.check_win(place, self.in_a_row);
                         if let Some((_, winning_line)) = win {
-                            //println!("Player {:?} wins!", self.active_player);
                             self.state = ConnectFourState::Win(winning_line);
                         }
                         self.active_player = match self.active_player {
@@ -60,7 +55,6 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
             }
             Some(GameCommand::Quit) => {
                 self.state = ConnectFourState::Finished;
-                ////println!("Quitting");
             }
             Some(GameCommand::Up) => {
                 //println!("Up");
