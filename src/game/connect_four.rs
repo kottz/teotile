@@ -1,11 +1,11 @@
 use crate::game::{Cell, Game, GameBoard, GameCommand};
-use crate::GRID_SIZE;
-use crate::Output;
+use crate::io::Output;
 use crate::Input;
+use crate::RenderBoard;
+use crate::GRID_SIZE;
+use crate::RGB;
 use anyhow::Result;
 use rand::Rng;
-use crate::RGB;
-use crate::RenderBoard;
 use smallvec::SmallVec;
 
 #[derive(Debug, PartialEq)]
@@ -131,7 +131,11 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                     }
                     */
                     for (col, row) in winning_line {
-                        let rgb = RGB::new(rng.gen_range(0..=255), rng.gen_range(0..=255), rng.gen_range(0..=255));
+                        let rgb = RGB::new(
+                            rng.gen_range(0..=255),
+                            rng.gen_range(0..=255),
+                            rng.gen_range(0..=255),
+                        );
                         render_board.set(*col, *row, rgb);
                     }
                     //render the winning line separately
@@ -212,7 +216,15 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         Ok(place)
     }
 
-    fn check_line(&self, x: i32, y: i32, dx: i32, dy: i32, player: Cell, in_a_row: usize) -> Option<SmallVec<[(usize, usize); GRID_SIZE]>> {
+    fn check_line(
+        &self,
+        x: i32,
+        y: i32,
+        dx: i32,
+        dy: i32,
+        player: Cell,
+        in_a_row: usize,
+    ) -> Option<SmallVec<[(usize, usize); GRID_SIZE]>> {
         let mut positions = SmallVec::<[(usize, usize); GRID_SIZE]>::new();
 
         for i in -(in_a_row as i32 - 1)..(in_a_row as i32) {
@@ -236,7 +248,11 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         None
     }
 
-    pub fn check_win(&self, last_move: (usize, usize), in_a_row: usize) -> Option<(Cell, SmallVec<[(usize, usize); GRID_SIZE]>)> {
+    pub fn check_win(
+        &self,
+        last_move: (usize, usize),
+        in_a_row: usize,
+    ) -> Option<(Cell, SmallVec<[(usize, usize); GRID_SIZE]>)> {
         let (x, y) = last_move;
         let directions = [
             (0, 1),  // up
@@ -251,7 +267,9 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         }
 
         for (dx, dy) in directions {
-            if let Some(winning_line) = self.check_line(x as i32, y as i32, dx, dy, player, in_a_row) {
+            if let Some(winning_line) =
+                self.check_line(x as i32, y as i32, dx, dy, player, in_a_row)
+            {
                 ////println!("Winning line: {:?}", winning_line);
                 return Some((player, winning_line));
             }
@@ -262,8 +280,8 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ConsoleInput, ConsoleOutput};
     use super::*;
+    use crate::{ConsoleInput, ConsoleOutput};
 
     #[test]
     fn test_new_game() {
