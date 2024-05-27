@@ -65,9 +65,9 @@ impl GameBoard {
         for row in self.cells.iter() {
             for cell in row.iter() {
                 match cell {
-                    Cell::Empty => {}//print!(". "),
-                    Cell::PlayerX => {}//print!("X "),
-                    Cell::PlayerO => {}//print!("O "),
+                    Cell::Empty => {}   //print!(". "),
+                    Cell::PlayerX => {} //print!("X "),
+                    Cell::PlayerO => {} //print!("O "),
                 }
             }
             //println!();

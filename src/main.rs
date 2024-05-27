@@ -2,14 +2,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod io;
-use io::{Input, ConsoleInput, ColorOutput, ConsoleOutput, TextInput};
+use io::{ColorOutput, ConsoleInput, ConsoleOutput, Input, TextInput};
 
 mod game;
-use game::{Game, Board, GameCommand, GameBoard, GRID_SIZE, Cell};
 use game::connect_four::{ConnectFour, ConnectFourState};
+use game::{Board, Cell, Game, GameBoard, GameCommand, GRID_SIZE};
 
 use anyhow::Result;
-
 
 // Update the render functions to make
 // use of the states. Makes it more cleaner to move
@@ -111,4 +110,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
