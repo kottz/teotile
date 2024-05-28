@@ -1,13 +1,10 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-mod io;
-use io::{ColorOutput, ConsoleInput, ConsoleOutput, Input, TextInput};
+#![no_std]
 
 mod game;
 use game::connect_four::{ConnectFour, ConnectFourState};
-use game::{Board, Cell, Game, GameBoard, GameCommand, GRID_SIZE};
+pub use game::{Board, Cell, GameEngine, Game, GameBoard, GameCommand, CommandType, Player, ButtonState, GRID_SIZE};
 
-use anyhow::Result;
+//use anyhow::Result;
 
 // Update the render functions to make
 // use of the states. Makes it more cleaner to move
@@ -15,9 +12,9 @@ use anyhow::Result;
 // on that in the render function
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RGB {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl RGB {
@@ -25,11 +22,8 @@ impl RGB {
         Self { r, g, b }
     }
 }
-//reexport GameEngine
 
-
-
-type RenderBoard = Board<RGB>;
+pub type RenderBoard = Board<RGB>;
 
 // fn game_loop() -> Result<()> {
 //     let text_in = TextInput {};

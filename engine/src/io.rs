@@ -1,7 +1,5 @@
-#[cfg(feature = "std")]
 use std::io::{stdout, Write};
 
-#[cfg(feature = "std")]
 use crossterm::{
     cursor::MoveLeft,
     event::{read, Event, KeyCode},

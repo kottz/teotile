@@ -1,14 +1,18 @@
 pub mod connect_four;
+use crate::ConnectFour;
+use crate::RenderBoard;
 
 use anyhow::Result;
+use core::time::Duration;
 pub const GRID_SIZE: usize = 12;
 
 pub trait Game {
-    fn process_input(&mut self) -> Result<()>;
-    fn update(&mut self) -> Result<()>;
-    fn render(&self) -> Result<()>;
+    fn process_input(&mut self, input: GameCommand) -> Result<()>;
+    fn update(&mut self, _current_time: Duration) -> Result<()>;
+    fn render(&self) -> Result<RenderBoard>;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Board<T> {
     pub cells: [[T; 12]; 12],
 }
@@ -119,11 +123,82 @@ impl Default for Cell {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GameCommand {
+pub enum ButtonState {
+    Pressed,
+    Released,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CommandType {
     Left,
     Right,
     Down,
     Up,
-    Quit,
     Select,
+    Quit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GameCommand {
+    pub command_type: CommandType,
+    pub button_state: ButtonState,
+    pub player: Player,
+}
+
+impl GameCommand {
+    pub fn new(command_type: CommandType, button_state: ButtonState, player: Player) -> Self {
+        Self {
+            command_type,
+            button_state,
+            player,
+        }
+    }
+}
+
+// #[derive(Debug, Clone, Copy, PartialEq)]
+// pub struct PlayerId(usize);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Player {
+    Player1,
+    Player2,
+}
+
+// TODO: Should the gameengine itself act as mainmenu?
+// or should it be a separate struct?
+// need some logic that will allow us to cancel the current game
+
+pub struct GameEngine<T: Game = ConnectFour> {
+    game: T,
+}
+
+impl Default for GameEngine<ConnectFour> {
+    fn default() -> Self {
+        Self {
+            game: ConnectFour::new(),
+        }
+    }
+}
+
+impl<T: Game> GameEngine<T> {
+    pub fn new(game: T) -> Self {
+        Self { game }
+    }
+
+    pub fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+        // TODO
+        // Intercept input here before sending to game
+        // to allow quitting the running game and returning to the main menu
+        // aka if input_command.command_type == CommandType::Quit
+        // then return to main menu
+        self.game.process_input(input_command)
+    }
+
+    pub fn update(&mut self, current_time: Duration) -> Result<()> {
+        self.game.update(current_time)
+    }
+
+    pub fn render(&self) -> Result<RenderBoard> {
+        self.game.render()
+    }
 }

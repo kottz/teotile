@@ -1,12 +1,15 @@
-use crate::game::{Cell, Game, GameBoard, GameCommand};
-use crate::io::Output;
-use crate::Input;
+use crate::game::{ButtonState, Cell, CommandType, Game, GameBoard, GameCommand};
+//use crate::io::Output;
+//use crate::Input;
 use crate::RenderBoard;
 use crate::GRID_SIZE;
 use crate::RGB;
 use anyhow::Result;
+use core::time::Duration;
 use rand::Rng;
 use smallvec::SmallVec;
+
+use super::Player;
 
 #[derive(Debug, PartialEq)]
 pub enum ConnectFourState {
@@ -15,60 +18,66 @@ pub enum ConnectFourState {
     Win(SmallVec<[(usize, usize); GRID_SIZE]>),
     Finished,
 }
-pub struct ConnectFour<I: Input, O: Output> {
-    input: I,
-    output: O,
+pub struct ConnectFour {
     pub board: GameBoard,
     in_a_row: usize,
-    active_player: Cell,
+    active_player: Player,
     active_col: usize,
     pub state: ConnectFourState,
 }
 
-impl<I: Input, O: Output> Game for ConnectFour<I, O> {
-    fn process_input(&mut self) -> Result<()> {
-        let command = self.input.read();
-        match command {
-            Some(GameCommand::Left) => {
-                let _ = self.move_col(GameCommand::Left);
-            }
-            Some(GameCommand::Right) => {
-                let _ = self.move_col(GameCommand::Right);
-            }
-            Some(GameCommand::Select) => {
-                match self.make_move(self.active_col, self.active_player) {
-                    Ok(place) => {
-                        let win = self.check_win(place, self.in_a_row);
-                        if let Some((_, winning_line)) = win {
-                            self.state = ConnectFourState::Win(winning_line);
+impl Game for ConnectFour {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+        // Check if the input is from the active player
+        if input_command.player != self.active_player {
+            // Ignore inputs from the inactive player
+            return Ok(());
+        }
+
+        // Process the input command only if it's a button press
+        if let ButtonState::Pressed = input_command.button_state {
+            match input_command.command_type {
+                CommandType::Left => {
+                    let _ = self.move_col(CommandType::Left);
+                }
+                CommandType::Right => {
+                    let _ = self.move_col(CommandType::Right);
+                }
+                CommandType::Select => {
+                    match self.make_move(self.active_col, self.active_player) {
+                        Ok(place) => {
+                            let win = self.check_win(place, self.in_a_row);
+                            if let Some((_, winning_line)) = win {
+                                self.state = ConnectFourState::Win(winning_line);
+                            }
+                            self.active_player = match self.active_player {
+                                Player::Player1 => Player::Player2,
+                                Player::Player2 => Player::Player1,
+                            };
                         }
-                        self.active_player = match self.active_player {
-                            Cell::PlayerX => Cell::PlayerO,
-                            Cell::PlayerO => Cell::PlayerX,
-                            _ => Cell::Empty,
-                        };
-                    }
-                    Err(e) => {
-                        //println!("Error: {:?}", e);
+                        Err(e) => {
+                            // Handle the error if needed
+                            // println!("Error: {:?}", e);
+                        }
                     }
                 }
+                CommandType::Quit => {
+                    self.state = ConnectFourState::Finished;
+                }
+                _ => {
+                    // Ignore other commands
+                }
             }
-            Some(GameCommand::Quit) => {
-                self.state = ConnectFourState::Finished;
-            }
-            Some(GameCommand::Up) => {
-                //println!("Up");
-            }
-            _ => {}
         }
+
         Ok(())
     }
 
-    fn update(&mut self) -> Result<()> {
+    fn update(&mut self, _current_time: Duration) -> Result<()> {
         Ok(())
     }
 
-    fn render(&self) -> Result<()> {
+    fn render(&self) -> Result<RenderBoard> {
         //println!(
         //    "active col: {:?}, active player {:?}",
         //    self.active_col, self.active_player
@@ -130,12 +139,12 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                         }
                     }
                     */
+                    let rgb = RGB::new(
+                        rng.gen_range(0..=255),
+                        rng.gen_range(0..=255),
+                        rng.gen_range(0..=255),
+                    );
                     for (col, row) in winning_line {
-                        let rgb = RGB::new(
-                            rng.gen_range(0..=255),
-                            rng.gen_range(0..=255),
-                            rng.gen_range(0..=255),
-                        );
                         render_board.set(*col, *row, rgb);
                     }
                     //render the winning line separately
@@ -146,7 +155,7 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
                     }*/
 
                     //let start = Instant::now();
-                    self.output.write(&render_board)?;
+                    //self.output.write(&render_board)?;
                     //let elapsed = start.elapsed();
 
                     //let frame_time = std::time::Duration::from_millis(1000 / 10);
@@ -161,35 +170,41 @@ impl<I: Input, O: Output> Game for ConnectFour<I, O> {
             }
         }
 
-        self.output.write(&render_board)?;
-        Ok(())
+        //self.output.write(&render_board)?;
+        Ok(render_board)
     }
 }
 
-impl<I: Input, O: Output> ConnectFour<I, O> {
-    pub fn new(input: I, output: O) -> Self {
+impl ConnectFour {
+    pub fn new() -> Self {
         Self {
-            input: input,
-            output: output,
             board: GameBoard::new(),
             in_a_row: 4,
-            active_player: Cell::PlayerX,
+            //active_player: Cell::PlayerX,
+            active_player: Player::Player1,
             active_col: 0,
             state: ConnectFourState::Start,
         }
     }
 
-    pub fn move_col(&mut self, direction: GameCommand) -> Result<()> {
-        if direction == GameCommand::Left && self.active_col > 0 {
+    pub fn move_col(&mut self, direction: CommandType) -> Result<()> {
+        if direction == CommandType::Left && self.active_col > 0 {
             self.active_col -= 1;
         }
-        if direction == GameCommand::Right && self.active_col < self.board.size() - 1 {
+        if direction == CommandType::Right && self.active_col < self.board.size() - 1 {
             self.active_col += 1;
         }
         Ok(())
     }
 
-    pub fn make_move(&mut self, x: usize, player: Cell) -> Result<(usize, usize)> {
+    pub fn _get_cell_from_player(&self, player: Player) -> Cell {
+        match player {
+            Player::Player1 => Cell::PlayerX,
+            Player::Player2 => Cell::PlayerO,
+        }
+    }
+
+    pub fn make_move(&mut self, x: usize, player: Player) -> Result<(usize, usize)> {
         if x > self.board.size() {
             return Err(anyhow::anyhow!("Invalid move"));
         }
@@ -202,13 +217,13 @@ impl<I: Input, O: Output> ConnectFour<I, O> {
         let mut place: (usize, usize) = (x, 0);
         for y in (0..self.board.size()).rev() {
             if self.board.get(x, y) != Cell::Empty {
-                self.board.set(x, y + 1, player);
+                self.board.set(x, y + 1, self._get_cell_from_player(player));
                 place = (x, y + 1);
                 break;
             }
             // If we're at the last row, and the cell is empty, then place there
             if y == 0 {
-                self.board.set(x, y, player);
+                self.board.set(x, y, self._get_cell_from_player(player));
                 place = (x, y);
             }
             ////println!("x: {}, y: {}", x, y);

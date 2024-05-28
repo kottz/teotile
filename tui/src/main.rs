@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{self, stdout};
-
+use std::time::Duration;
+use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RenderBoard, RGB};
 const GRID_SIZE: usize = 12;
 
 use crossterm::{
@@ -16,12 +17,32 @@ use ratatui::{
 fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
+    let mut engine = GameEngine::default();
+    // for _ in 0..10 {
+    //     let command = GameCommand::new(CommandType::Right, ButtonState::Pressed, Player::Player1);
+    //     let _ = engine.process_input(command);
+    //     let ten_millis = Duration::from_millis(10);
+    //     let output = engine.update(ten_millis);
+    //     let board = engine.render();
+    //     println!("{:?}", board);
+    // }
+    //engine.process_input(GameCommand::Up);
+    let mut app = App::new();
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let mut should_quit = false;
     while !should_quit {
-        terminal.draw(ui)?;
-        should_quit = handle_events()?;
+        //terminal.draw(ui(&app))?;
+        terminal.draw(|f| ui(f, &app))?;
+        //should_quit = handle_events()?;
+        //let command: GameCommand = handle_events()?;
+        if let Ok(Some(command)) = handle_events() {
+            if command.command_type == CommandType::Quit {
+                should_quit = true;
+            }
+            let _ = engine.process_input(command);
+        }
+        app.grid.update_grid_from_renderboard(&engine.render().unwrap());
     }
 
     disable_raw_mode()?;
@@ -29,21 +50,53 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn handle_events() -> io::Result<bool> {
+// fn handle_events() -> io::Result<bool> {
+//     if event::poll(std::time::Duration::from_millis(50))? {
+//         if let Event::Key(key) = event::read()? {
+//             if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
+//                 return Ok(true);
+//             }
+//             if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('w') {
+//                 println!("W pressed");
+//             }
+//         }
+//     }
+//     Ok(false)
+// }
+fn handle_events() -> io::Result<Option<GameCommand>> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                return Ok(true);
-            }
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('w') {
-                println!("W pressed");
-            }
+            let button_state = if key.kind == event::KeyEventKind::Press {
+                ButtonState::Pressed
+            } else {
+                ButtonState::Released
+            };
+
+            let command = match key.code {
+                KeyCode::Char('q') => return Ok(Some(GameCommand::new(CommandType::Quit, button_state, Player::Player1))),
+                KeyCode::Char('w') => GameCommand::new(CommandType::Up, button_state, Player::Player1),
+                KeyCode::Char('a') => GameCommand::new(CommandType::Left, button_state, Player::Player1),
+                KeyCode::Char('s') => GameCommand::new(CommandType::Down, button_state, Player::Player1),
+                KeyCode::Char('d') => GameCommand::new(CommandType::Right, button_state, Player::Player1),
+                KeyCode::Char('e') => GameCommand::new(CommandType::Select, button_state, Player::Player1),
+                KeyCode::Char('r') => GameCommand::new(CommandType::Select, button_state, Player::Player1),
+                KeyCode::Char('f') => GameCommand::new(CommandType::Quit, button_state, Player::Player1),
+                KeyCode::Up => GameCommand::new(CommandType::Up, button_state, Player::Player2),
+                KeyCode::Left => GameCommand::new(CommandType::Left, button_state, Player::Player2),
+                KeyCode::Down => GameCommand::new(CommandType::Down, button_state, Player::Player2),
+                KeyCode::Right => GameCommand::new(CommandType::Right, button_state, Player::Player2),
+                KeyCode::Enter => GameCommand::new(CommandType::Select, button_state, Player::Player2),
+                KeyCode::Char('m') => GameCommand::new(CommandType::Select, button_state, Player::Player2),
+                KeyCode::Backspace => GameCommand::new(CommandType::Quit, button_state, Player::Player2),
+                _ => return Ok(None),
+            };
+
+            return Ok(Some(command));
         }
     }
-    Ok(false)
+    Ok(None)
 }
-
-fn ui(frame: &mut Frame) {
+fn ui(frame: &mut Frame, app: &App) {
     let main_layout = Layout::new(
         Direction::Vertical,
         [
@@ -75,9 +128,9 @@ fn ui(frame: &mut Frame) {
     )
     .split(inner_layout[1]);
 
-    let app = App::new();
     let grid_space = create_grid_layout(&inner_layout[0]);
     frame.render_widget(app.grid.grid_canvas(), grid_space);
+    //frame.render_widget(app.grid.grid_canvas(), grid_space);
 
     for (i, pl) in player_layout.iter().enumerate() {
         let player_string = format!("Player {}", i + 1);
@@ -131,9 +184,10 @@ impl Grid {
                 let grid_size = GRID_SIZE as u8;
                 for i in 0..=grid_size - 1 {
                     for j in 0..=grid_size - 1 {
+                        let color = self.coords[i as usize][j as usize];
                         ctx.draw(&Points {
                             coords: &[(i as f64, j as f64)],
-                            color: Color::Rgb(150 + (j + i) * 4, 150 + j * 4, 150 + i * 4),
+                            color: color, //Color::Rgb(150 + (j + i) * 4, 150 + j * 4, 150 + i * 4),
                         })
                     }
                 }
@@ -141,6 +195,36 @@ impl Grid {
             .x_bounds([0.0, 11.0])
             .y_bounds([0.0, 11.0])
     }
+
+    fn update_grid_from_renderboard(&mut self, render_board: &RenderBoard) {
+        for i in 0..GRID_SIZE {
+            for j in 0..GRID_SIZE {
+                let color: RGB = render_board.get(i, j);
+                self.coords[i][j] = Color::Rgb(color.r, color.g, color.b);
+            }
+        }
+    }
+    // fn draw_grid_from_renderboard(&self, render_board: &RenderBoard) -> impl Widget + '_ {
+    //     let render_clone = render_board.clone();
+    //     //let color: RGB = render_board.get(0,0);
+    //     Canvas::default()
+    //         .block(Block::bordered())
+    //         .marker(self.marker)
+    //         .paint(move |ctx| {
+    //             let grid_size = GRID_SIZE as u8;
+    //             for i in 0..=grid_size - 1 {
+    //                 for j in 0..=grid_size - 1 {
+    //                     let color: RGB = render_clone.get(i as usize, j as usize);
+    //                     ctx.draw(&Points {
+    //                         coords: &[(i as f64, j as f64)],
+    //                         color: Color::Rgb(color.r, color.g, color.b),
+    //                     })
+    //                 }
+    //             }
+    //         })
+    //         .x_bounds([0.0, 11.0])
+    //         .y_bounds([0.0, 11.0])
+    // }
 }
 
 struct App {
