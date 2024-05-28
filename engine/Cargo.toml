@@ -3,15 +3,9 @@ name = "teotile"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = ["std"]
-std = []
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.72"
-crossterm = "0.26.1"
-defmt = "0.3.5"
+anyhow = { version = "1.0.86", default-features = false }
 rand = "0.8.5"
-smallvec = "1.11.0"
+smallvec = "1.13.2"
