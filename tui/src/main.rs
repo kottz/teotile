@@ -19,24 +19,12 @@ fn main() -> io::Result<()> {
     stdout().execute(EnterAlternateScreen)?;
     let mut engine = GameEngine::default();
     let mut prev_instant = Instant::now();
-    // for _ in 0..10 {
-    //     let command = GameCommand::new(CommandType::Right, ButtonState::Pressed, Player::Player1);
-    //     let _ = engine.process_input(command);
-    //     let ten_millis = Duration::from_millis(10);
-    //     let output = engine.update(ten_millis);
-    //     let board = engine.render();
-    //     println!("{:?}", board);
-    // }
-    //engine.process_input(GameCommand::Up);
     let mut app = App::new();
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let mut should_quit = false;
     while !should_quit {
-        //terminal.draw(ui(&app))?;
         terminal.draw(|f| ui(f, &app))?;
-        //should_quit = handle_events()?;
-        //let command: GameCommand = handle_events()?;
         if let Ok(Some(command)) = handle_events() {
             if command.command_type == CommandType::Quit {
                 should_quit = true;
@@ -56,19 +44,6 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-// fn handle_events() -> io::Result<bool> {
-//     if event::poll(std::time::Duration::from_millis(50))? {
-//         if let Event::Key(key) = event::read()? {
-//             if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
-//                 return Ok(true);
-//             }
-//             if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('w') {
-//                 println!("W pressed");
-//             }
-//         }
-//     }
-//     Ok(false)
-// }
 fn handle_events() -> io::Result<Option<GameCommand>> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
@@ -79,7 +54,7 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
             };
 
             let command = match key.code {
-                KeyCode::Char('q') => {
+                KeyCode::Char('q') | KeyCode::Char('f') => {
                     return Ok(Some(GameCommand::new(
                         CommandType::Quit,
                         button_state,
@@ -98,14 +73,8 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
                 KeyCode::Char('d') => {
                     GameCommand::new(CommandType::Right, button_state, Player::Player1)
                 }
-                KeyCode::Char('e') => {
+                KeyCode::Char('e') | KeyCode::Char('r') => {
                     GameCommand::new(CommandType::Select, button_state, Player::Player1)
-                }
-                KeyCode::Char('r') => {
-                    GameCommand::new(CommandType::Select, button_state, Player::Player1)
-                }
-                KeyCode::Char('f') => {
-                    GameCommand::new(CommandType::Quit, button_state, Player::Player1)
                 }
                 KeyCode::Up => GameCommand::new(CommandType::Up, button_state, Player::Player2),
                 KeyCode::Left => GameCommand::new(CommandType::Left, button_state, Player::Player2),
@@ -113,10 +82,7 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
                 KeyCode::Right => {
                     GameCommand::new(CommandType::Right, button_state, Player::Player2)
                 }
-                KeyCode::Enter => {
-                    GameCommand::new(CommandType::Select, button_state, Player::Player2)
-                }
-                KeyCode::Char('m') => {
+                KeyCode::Enter | KeyCode::Char('m') => {
                     GameCommand::new(CommandType::Select, button_state, Player::Player2)
                 }
                 KeyCode::Backspace => {
@@ -130,6 +96,7 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
     }
     Ok(None)
 }
+
 fn ui(frame: &mut Frame, app: &App) {
     let main_layout = Layout::new(
         Direction::Vertical,
@@ -164,7 +131,6 @@ fn ui(frame: &mut Frame, app: &App) {
 
     let grid_space = create_grid_layout(&inner_layout[0]);
     frame.render_widget(app.grid.grid_canvas(), grid_space);
-    //frame.render_widget(app.grid.grid_canvas(), grid_space);
 
     for (i, pl) in player_layout.iter().enumerate() {
         let player_string = format!("Player {}", i + 1);
@@ -215,21 +181,18 @@ impl Grid {
             .block(Block::bordered())
             .marker(self.marker)
             .paint(|ctx| {
-                let grid_size = GRID_SIZE as u8;
-                for i in 0..=grid_size - 1 {
-                    for j in 0..=grid_size - 1 {
-                        let color = self.coords[i as usize][j as usize];
+                for (i, row) in self.coords.iter().enumerate() {
+                    for (j, &color) in row.iter().enumerate() {
                         ctx.draw(&Points {
                             coords: &[(i as f64, j as f64)],
-                            color: color, //Color::Rgb(150 + (j + i) * 4, 150 + j * 4, 150 + i * 4),
-                        })
+                            color,
+                        });
                     }
                 }
             })
             .x_bounds([0.0, 11.0])
             .y_bounds([0.0, 11.0])
     }
-
     fn update_grid_from_renderboard(&mut self, render_board: &RenderBoard) {
         for i in 0..GRID_SIZE {
             for j in 0..GRID_SIZE {
@@ -238,44 +201,28 @@ impl Grid {
             }
         }
     }
-    // fn draw_grid_from_renderboard(&self, render_board: &RenderBoard) -> impl Widget + '_ {
-    //     let render_clone = render_board.clone();
-    //     //let color: RGB = render_board.get(0,0);
-    //     Canvas::default()
-    //         .block(Block::bordered())
-    //         .marker(self.marker)
-    //         .paint(move |ctx| {
-    //             let grid_size = GRID_SIZE as u8;
-    //             for i in 0..=grid_size - 1 {
-    //                 for j in 0..=grid_size - 1 {
-    //                     let color: RGB = render_clone.get(i as usize, j as usize);
-    //                     ctx.draw(&Points {
-    //                         coords: &[(i as f64, j as f64)],
-    //                         color: Color::Rgb(color.r, color.g, color.b),
-    //                     })
-    //                 }
-    //             }
-    //         })
-    //         .x_bounds([0.0, 11.0])
-    //         .y_bounds([0.0, 11.0])
-    // }
 }
 
 struct App {
-    x: f64,
-    y: f64,
     grid: Grid,
 }
 
 impl App {
     fn new() -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0,
-            grid: Grid::new(),
-        }
+        Self { grid: Grid::new() }
     }
 }
+
+const BUTTONS: [(&str, bool); 8] = [
+    ("up", false),
+    ("down", false),
+    ("left", false),
+    ("right", false),
+    ("a", false),
+    ("b", false),
+    ("start", false),
+    ("select", false),
+];
 
 struct PlayerInput {
     name: String,
@@ -285,15 +232,11 @@ struct PlayerInput {
 impl PlayerInput {
     fn new() -> Self {
         let name = "Player".to_string();
-        let mut buttons = HashMap::new();
-        buttons.insert("up".to_string(), false);
-        buttons.insert("down".to_string(), false);
-        buttons.insert("left".to_string(), false);
-        buttons.insert("right".to_string(), false);
-        buttons.insert("a".to_string(), false);
-        buttons.insert("b".to_string(), false);
-        buttons.insert("start".to_string(), false);
-        buttons.insert("select".to_string(), false);
+        let buttons = BUTTONS
+            .iter()
+            .cloned()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
         Self { name, buttons }
     }
 
@@ -303,18 +246,13 @@ impl PlayerInput {
     }
 
     fn create_widget(&self) -> impl Widget + '_ {
-        //let mut state = ListState::default();
-        let mut button_vec = self
-            .buttons
-            .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
-            .collect::<Vec<String>>();
+        let button_map = self.buttons.iter().map(|(k, v)| format!("{}: {}", k, v));
+        let mut button_vec = button_map.collect::<Vec<String>>();
         button_vec.sort();
-        let list = List::new(button_vec)
+        List::new(button_vec)
             .block(Block::bordered().title(self.name.as_str()))
             .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
             .highlight_symbol(">>")
-            .repeat_highlight_symbol(true);
-        return list;
+            .repeat_highlight_symbol(true)
     }
 }
