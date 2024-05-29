@@ -8,7 +8,7 @@ pub const GRID_SIZE: usize = 12;
 
 pub trait Game {
     fn process_input(&mut self, input: GameCommand) -> Result<()>;
-    fn update(&mut self, _current_time: Duration) -> Result<()>;
+    fn update(&mut self, delta_time: Duration) -> Result<()>;
     fn render(&self) -> Result<RenderBoard>;
 }
 

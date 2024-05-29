@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::{self, stdout};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RenderBoard, RGB};
 const GRID_SIZE: usize = 12;
 
@@ -18,6 +18,7 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut engine = GameEngine::default();
+    let mut prev_instant = Instant::now();
     // for _ in 0..10 {
     //     let command = GameCommand::new(CommandType::Right, ButtonState::Pressed, Player::Player1);
     //     let _ = engine.process_input(command);
@@ -42,7 +43,12 @@ fn main() -> io::Result<()> {
             }
             let _ = engine.process_input(command);
         }
-        app.grid.update_grid_from_renderboard(&engine.render().unwrap());
+        let current_instant = Instant::now();
+        let delta = current_instant - prev_instant;
+        prev_instant = current_instant;
+        let _ = engine.update(delta);
+        app.grid
+            .update_grid_from_renderboard(&engine.render().unwrap());
     }
 
     disable_raw_mode()?;
@@ -73,21 +79,49 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
             };
 
             let command = match key.code {
-                KeyCode::Char('q') => return Ok(Some(GameCommand::new(CommandType::Quit, button_state, Player::Player1))),
-                KeyCode::Char('w') => GameCommand::new(CommandType::Up, button_state, Player::Player1),
-                KeyCode::Char('a') => GameCommand::new(CommandType::Left, button_state, Player::Player1),
-                KeyCode::Char('s') => GameCommand::new(CommandType::Down, button_state, Player::Player1),
-                KeyCode::Char('d') => GameCommand::new(CommandType::Right, button_state, Player::Player1),
-                KeyCode::Char('e') => GameCommand::new(CommandType::Select, button_state, Player::Player1),
-                KeyCode::Char('r') => GameCommand::new(CommandType::Select, button_state, Player::Player1),
-                KeyCode::Char('f') => GameCommand::new(CommandType::Quit, button_state, Player::Player1),
+                KeyCode::Char('q') => {
+                    return Ok(Some(GameCommand::new(
+                        CommandType::Quit,
+                        button_state,
+                        Player::Player1,
+                    )))
+                }
+                KeyCode::Char('w') => {
+                    GameCommand::new(CommandType::Up, button_state, Player::Player1)
+                }
+                KeyCode::Char('a') => {
+                    GameCommand::new(CommandType::Left, button_state, Player::Player1)
+                }
+                KeyCode::Char('s') => {
+                    GameCommand::new(CommandType::Down, button_state, Player::Player1)
+                }
+                KeyCode::Char('d') => {
+                    GameCommand::new(CommandType::Right, button_state, Player::Player1)
+                }
+                KeyCode::Char('e') => {
+                    GameCommand::new(CommandType::Select, button_state, Player::Player1)
+                }
+                KeyCode::Char('r') => {
+                    GameCommand::new(CommandType::Select, button_state, Player::Player1)
+                }
+                KeyCode::Char('f') => {
+                    GameCommand::new(CommandType::Quit, button_state, Player::Player1)
+                }
                 KeyCode::Up => GameCommand::new(CommandType::Up, button_state, Player::Player2),
                 KeyCode::Left => GameCommand::new(CommandType::Left, button_state, Player::Player2),
                 KeyCode::Down => GameCommand::new(CommandType::Down, button_state, Player::Player2),
-                KeyCode::Right => GameCommand::new(CommandType::Right, button_state, Player::Player2),
-                KeyCode::Enter => GameCommand::new(CommandType::Select, button_state, Player::Player2),
-                KeyCode::Char('m') => GameCommand::new(CommandType::Select, button_state, Player::Player2),
-                KeyCode::Backspace => GameCommand::new(CommandType::Quit, button_state, Player::Player2),
+                KeyCode::Right => {
+                    GameCommand::new(CommandType::Right, button_state, Player::Player2)
+                }
+                KeyCode::Enter => {
+                    GameCommand::new(CommandType::Select, button_state, Player::Player2)
+                }
+                KeyCode::Char('m') => {
+                    GameCommand::new(CommandType::Select, button_state, Player::Player2)
+                }
+                KeyCode::Backspace => {
+                    GameCommand::new(CommandType::Quit, button_state, Player::Player2)
+                }
                 _ => return Ok(None),
             };
 
