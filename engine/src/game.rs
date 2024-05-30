@@ -1,10 +1,30 @@
-pub mod connect_four;
-use crate::ConnectFour;
-use crate::RenderBoard;
-
 use anyhow::Result;
 use core::time::Duration;
+
+mod connect_four;
+mod menu;
+mod tictactoe;
+
+use connect_four::ConnectFour;
+use menu::Menu;
+use tictactoe::TicTacToe;
+
 pub const GRID_SIZE: usize = 12;
+
+pub type RenderBoard = Board<RGB, 12, 12>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct RGB {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl RGB {
+    fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+}
 
 pub trait Game {
     fn process_input(&mut self, input: GameCommand) -> Result<()>;
@@ -12,114 +32,12 @@ pub trait Game {
     fn render(&self) -> Result<RenderBoard>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Board<T> {
-    pub cells: [[T; 12]; 12],
-}
-
-impl<T: Copy> Board<T> {
-    pub fn new(initial_value: T) -> Self
-    where
-        T: Copy,
-    {
-        Board {
-            cells: [[initial_value; 12]; 12],
-        }
-    }
-    pub fn size(&self) -> usize {
-        self.cells.len()
-    }
-    pub fn set(&mut self, x: usize, y: usize, value: T) {
-        self.cells[self.size() - 1 - y][x] = value;
-    }
-    pub fn get(&self, x: usize, y: usize) -> T {
-        self.cells[self.size() - 1 - y][x]
-    }
-}
-
-//type GameBoard = Board<Cell>;
-//type RenderBoard = Board<RGB>;
-
-pub struct GameBoard {
-    pub cells: [[Cell; 12]; 12],
-}
-
-impl GameBoard {
-    pub fn new() -> Self {
-        Self {
-            cells: Default::default(),
-        }
-    }
-
-    pub fn size(&self) -> usize {
-        self.cells.len()
-    }
-
-    pub fn set_cell(&mut self, row: usize, col: usize, cell: Cell) {
-        self.cells[row][col] = cell;
-    }
-    pub fn set(&mut self, x: usize, y: usize, cell: Cell) {
-        self.cells[self.size() - 1 - y][x] = cell;
-    }
-    pub fn get(&self, x: usize, y: usize) -> Cell {
-        self.cells[self.size() - 1 - y][x]
-    }
-
-    pub fn print(&self) {
-        for row in self.cells.iter() {
-            for cell in row.iter() {
-                match cell {
-                    Cell::Empty => {}   //print!(". "),
-                    Cell::PlayerX => {} //print!("X "),
-                    Cell::PlayerO => {} //print!("O "),
-                }
-            }
-            //println!();
-        }
-        //println!("");
-    }
-    /*
-        pub fn map_as_rgb(&self) -> Vec<Vec<RGB>> {
-            let mut map = vec![vec![RGB::new(0, 0, 0); self.size()]; self.size()];
-            for row in 0..self.size() {
-                for col in 0..self.size() {
-                    match self.get(col, row) {
-                        Cell::Empty => map[row][col] = RGB::new(0, 0, 0),
-                        Cell::PlayerX => map[row][col] = RGB::new(255, 0, 0),
-                        Cell::PlayerO => map[row][col] = RGB::new(0, 0, 255),
-                    }
-                }
-            }
-            map
-        }
-
-        pub fn print_as_rgb(&self) {
-            for row in self.cells.iter() {
-                for cell in row.iter() {
-                    match cell {
-                        Cell::Empty => print!("{:?} ", RGB::new(0, 0, 0)),
-                        Cell::PlayerX => print!("{:?} ", RGB::new(255, 0, 0)),
-                        Cell::PlayerO => print!("{:?} ", RGB::new(0, 0, 255)),
-                    }
-                }
-                //println!();
-            }
-            //println!();
-        }
-    */
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum Cell {
+    #[default]
     Empty,
     PlayerX,
     PlayerO,
-}
-
-impl Default for Cell {
-    fn default() -> Self {
-        Cell::Empty
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -155,27 +73,54 @@ impl GameCommand {
     }
 }
 
-// #[derive(Debug, Clone, Copy, PartialEq)]
-// pub struct PlayerId(usize);
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Player {
     Player1,
     Player2,
 }
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Board<T, const ROWS: usize, const COLS: usize> {
+    pub cells: [[T; COLS]; ROWS],
+}
 
-// TODO: Should the gameengine itself act as mainmenu?
-// or should it be a separate struct?
-// need some logic that will allow us to cancel the current game
+impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Board<T, ROWS, COLS> {
+    pub fn new() -> Self {
+        Self {
+            cells: [[T::default(); COLS]; ROWS],
+        }
+    }
 
-pub struct GameEngine<T: Game = ConnectFour> {
+    pub fn rows(&self) -> usize {
+        ROWS
+    }
+
+    pub fn cols(&self) -> usize {
+        COLS
+    }
+
+    pub fn set(&mut self, row: usize, col: usize, value: T) {
+        self.cells[row][col] = value;
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> T {
+        self.cells[x][y]
+    }
+}
+
+impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Default for Board<T, ROWS, COLS> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct GameEngine<T: Game = Menu> {
     game: T,
 }
 
-impl Default for GameEngine<ConnectFour> {
+impl Default for GameEngine<Menu> {
     fn default() -> Self {
         Self {
-            game: ConnectFour::new(),
+            game: Menu::new(),
         }
     }
 }
@@ -191,6 +136,8 @@ impl<T: Game> GameEngine<T> {
         // to allow quitting the running game and returning to the main menu
         // aka if input_command.command_type == CommandType::Quit
         // then return to main menu
+        //
+        // This functionality is currently handled by the main menu game
         self.game.process_input(input_command)
     }
 

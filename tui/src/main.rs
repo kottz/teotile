@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::{self, stdout};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RenderBoard, RGB};
 const GRID_SIZE: usize = 12;
 
@@ -25,11 +25,14 @@ fn main() -> io::Result<()> {
     let mut should_quit = false;
     while !should_quit {
         terminal.draw(|f| ui(f, &app))?;
-        if let Ok(Some(command)) = handle_events() {
-            if command.command_type == CommandType::Quit {
+        match handle_events() {
+            Ok(Some(command)) => {
+                let _ = engine.process_input(command);
+            }
+            Ok(None) => {}
+            Err(_) => {
                 should_quit = true;
             }
-            let _ = engine.process_input(command);
         }
         let current_instant = Instant::now();
         let delta = current_instant - prev_instant;
@@ -87,6 +90,12 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
                 }
                 KeyCode::Backspace => {
                     GameCommand::new(CommandType::Quit, button_state, Player::Player2)
+                }
+                KeyCode::Esc | KeyCode::Char('u') => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Escape key pressed, quitting",
+                    ))
                 }
                 _ => return Ok(None),
             };

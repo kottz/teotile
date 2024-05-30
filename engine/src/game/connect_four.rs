@@ -1,19 +1,18 @@
-use crate::game::{ButtonState, Cell, CommandType, Game, GameBoard, GameCommand};
-//use crate::io::Output;
-//use crate::Input;
+use crate::game::{Board, ButtonState, Cell, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::GRID_SIZE;
 use crate::RGB;
 use anyhow::Result;
 use core::time::Duration;
-use rand::Rng;
+use libm::{fabs, sin};
 use smallvec::SmallVec;
 
 use super::Player;
 
+const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+
 #[derive(Debug, PartialEq)]
 pub enum ConnectFourState {
-    //Start,
     Playing,
     Win(SmallVec<[(usize, usize); GRID_SIZE]>),
     Finished,
@@ -24,6 +23,8 @@ struct WinAnimationState {
     state: usize,
     last_update_time: Duration,
 }
+
+pub type GameBoard = Board<Cell, GRID_SIZE, GRID_SIZE>;
 
 pub struct ConnectFour {
     pub board: GameBoard,
@@ -39,13 +40,10 @@ impl Game for ConnectFour {
     fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
         match &self.state {
             ConnectFourState::Playing => {
-                // Check if the input is from the active player
                 if input_command.player != self.active_player {
-                    // Ignore inputs from the inactive player
                     return Ok(());
                 }
 
-                // Process the input command only if it's a button press
                 if let ButtonState::Pressed = input_command.button_state {
                     match input_command.command_type {
                         CommandType::Left => {
@@ -55,29 +53,21 @@ impl Game for ConnectFour {
                             let _ = self.move_col(CommandType::Right);
                         }
                         CommandType::Select => {
-                            match self.make_move(self.active_col, self.active_player) {
-                                Ok(place) => {
-                                    let win = self.check_win(place, self.in_a_row);
-                                    if let Some((_, winning_line)) = win {
-                                        self.state = ConnectFourState::Win(winning_line);
-                                    }
-                                    self.active_player = match self.active_player {
-                                        Player::Player1 => Player::Player2,
-                                        Player::Player2 => Player::Player1,
-                                    };
+                            if let Ok(place) = self.make_move(self.active_col, self.active_player) {
+                                let win = self.check_win(place, self.in_a_row);
+                                if let Some((_, winning_line)) = win {
+                                    self.state = ConnectFourState::Win(winning_line);
                                 }
-                                Err(e) => {
-                                    // Handle the error if needed
-                                    // println!("Error: {:?}", e);
-                                }
+                                self.active_player = match self.active_player {
+                                    Player::Player1 => Player::Player2,
+                                    Player::Player2 => Player::Player1,
+                                };
                             }
                         }
                         CommandType::Quit => {
                             self.state = ConnectFourState::Finished;
                         }
-                        _ => {
-                            // Ignore other commands
-                        }
+                        _ => {}
                     }
                 }
             }
@@ -93,11 +83,8 @@ impl Game for ConnectFour {
                         _ => return Ok(()),
                     }
                 }
-                //self.process_input_win(input_command)?;
             }
-            ConnectFourState::Finished => {
-                //self.process_input_finished(input_command)?;
-            }
+            ConnectFourState::Finished => {}
         }
 
         Ok(())
@@ -106,49 +93,35 @@ impl Game for ConnectFour {
     fn update(&mut self, delta_time: Duration) -> Result<()> {
         self.current_time += delta_time;
 
-        // keep track of win animation timing here maybe?
         match &self.state {
             ConnectFourState::Playing => {
                 self.win_animation_state.last_update_time = self.current_time;
-
-                //todo
             }
             ConnectFourState::Win(_) => {
-                if self.current_time - self.win_animation_state.last_update_time > Duration::from_millis(100) {
+                if self.current_time - self.win_animation_state.last_update_time
+                    > WIN_ANIMATION_SPEED
+                {
                     self.win_animation_state.last_update_time = self.current_time;
 
                     if self.win_animation_state.state >= 20 {
                         self.win_animation_state.state = 0;
                     }
                     self.win_animation_state.state += 1;
-                } //todo
+                }
             }
-            ConnectFourState::Finished => {
-                //todo
-            }
+            ConnectFourState::Finished => {}
         }
         Ok(())
     }
 
     fn render(&self) -> Result<RenderBoard> {
-        //println!(
-        //    "active col: {:?}, active player {:?}",
-        //    self.active_col, self.active_player
-        //);
-        // I want to create a renderboard from the gameboard here and then just send it to the
-        // output function. It will handle the final rendering to either the terminal or the LEDs.
+        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
+        let mut render_board = RenderBoard::new();
 
-        let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
-
-        //Later I want to make the outer loop handle all of the timings
-        //Refactor this when you add a realtime game.
         match &self.state {
-            // ConnectFourState::Start => {
-            //     //todo
-            // }
             ConnectFourState::Playing => {
-                for row in 0..self.board.size() {
-                    for col in 0..self.board.size() {
+                for row in 0..self.board.rows() {
+                    for col in 0..self.board.cols() {
                         let cell = self.board.get(col, row);
                         let mut rgb = RGB::new(0, 0, 0);
                         if col == self.active_col {
@@ -175,61 +148,26 @@ impl Game for ConnectFour {
                 }
             }
             ConnectFourState::Win(winning_line) => {
-                // reset color in active column!
-                for row in 0..self.board.size() {
-                    for col in 0..self.board.size() {
+                // reset color in active column
+                for row in 0..self.board.rows() {
+                    for col in 0..self.board.cols() {
                         if col == self.active_col && self.board.get(col, row) == Cell::Empty {
                             let rgb = RGB::new(0, 0, 0);
                             render_board.set(col, row, rgb);
                         }
                     }
                 }
-                let mut rng = rand::thread_rng();
-                for _ in 0..20 {
-                    /*
-                    for row in 0..self.board.size() {
-                        for col in 0..self.board.size() {
-                            let rgb = RGB::new(
-                                rng.gen_range(0..=255),
-                                rng.gen_range(0..=255),
-                                rng.gen_range(0..=255),
-                            );
-                            render_board.set(col, row, rgb);
-                        }
-                    }
-                    */
-                    let rgb = RGB::new(
-                        rng.gen_range(0..=255),
-                        rng.gen_range(0..=255),
-                        rng.gen_range(0..=255),
-                    );
-                    for (col, row) in winning_line {
-                        render_board.set(*col, *row, rgb);
-                    }
-                    //render the winning line separately
-                    /*
-                    for (col, row) in winning_line {
-                        let rgb = RGB::new(0, 0, 0);
-                        render_board.set(*col, *row, rgb);
-                    }*/
 
-                    //let start = Instant::now();
-                    //self.output.write(&render_board)?;
-                    //let elapsed = start.elapsed();
-
-                    //let frame_time = std::time::Duration::from_millis(1000 / 10);
-                    //if elapsed < frame_time {
-                    //    std::thread::sleep(frame_time - elapsed);
-                    //}
-                    //println!();
+                let s = self.win_animation_state.state;
+                let f: f64 = s as f64;
+                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
+                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                for (col, row) in winning_line {
+                    render_board.set(*col, *row, color);
                 }
             }
-            ConnectFourState::Finished => {
-                //todo
-            }
+            ConnectFourState::Finished => {}
         }
-
-        //self.output.write(&render_board)?;
         Ok(render_board)
     }
 }
@@ -239,7 +177,6 @@ impl ConnectFour {
         Self {
             board: GameBoard::new(),
             in_a_row: 4,
-            //active_player: Cell::PlayerX,
             active_player: Player::Player1,
             active_col: 0,
             state: ConnectFourState::Playing,
@@ -255,7 +192,7 @@ impl ConnectFour {
         if direction == CommandType::Left && self.active_col > 0 {
             self.active_col -= 1;
         }
-        if direction == CommandType::Right && self.active_col < self.board.size() - 1 {
+        if direction == CommandType::Right && self.active_col < self.board.cols() - 1 {
             self.active_col += 1;
         }
         Ok(())
@@ -269,17 +206,15 @@ impl ConnectFour {
     }
 
     pub fn make_move(&mut self, x: usize, player: Player) -> Result<(usize, usize)> {
-        if x > self.board.size() {
+        if x > self.board.cols() {
             return Err(anyhow::anyhow!("Invalid move"));
         }
-        //if player != self.active_player {
-        //    return Err(anyhow::anyhow!("Not your turn"));
-        //}
-        if self.board.get(x, self.board.size() - 1) != Cell::Empty {
+
+        if self.board.get(x, self.board.cols() - 1) != Cell::Empty {
             return Err(anyhow::anyhow!("Column is full"));
         }
         let mut place: (usize, usize) = (x, 0);
-        for y in (0..self.board.size()).rev() {
+        for y in (0..self.board.rows()).rev() {
             if self.board.get(x, y) != Cell::Empty {
                 self.board.set(x, y + 1, self._get_cell_from_player(player));
                 place = (x, y + 1);
@@ -290,7 +225,6 @@ impl ConnectFour {
                 self.board.set(x, y, self._get_cell_from_player(player));
                 place = (x, y);
             }
-            ////println!("x: {}, y: {}", x, y);
         }
         Ok(place)
     }
@@ -312,8 +246,8 @@ impl ConnectFour {
 
             if nx >= 0
                 && ny >= 0
-                && nx < self.board.size() as i32
-                && ny < self.board.size() as i32
+                && nx < self.board.cols() as i32
+                && ny < self.board.rows() as i32
                 && self.board.get(nx as usize, ny as usize) == player
             {
                 positions.push((nx as usize, ny as usize));
@@ -357,16 +291,19 @@ impl ConnectFour {
     }
 }
 
+impl Default for ConnectFour {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ConsoleInput, ConsoleOutput};
 
     #[test]
     fn test_new_game() {
-        let con_in = ConsoleInput {};
-        let con_out = ConsoleOutput {};
-        let game = ConnectFour::new(con_in, con_out);
+        let game = ConnectFour::new();
 
         // The board should be empty at the start of the game
         for row in game.board.cells.iter() {
@@ -376,62 +313,36 @@ mod tests {
         }
 
         // The active player should be PlayerX at the start of the game
-        assert_eq!(game.active_player, Cell::PlayerX);
+        assert_eq!(game.active_player, Player::Player1);
     }
-    /*
-        #[test]
-        fn test_make_move_turn() {
-            let con_in = ConsoleInput {};
-            let con_out = ConsoleOutput {};
-            let mut game = ConnectFour::new(con_in, con_out);
 
-            // PlayerX should be able to make a move
-            assert!(game.make_move(0, Cell::PlayerX).is_ok());
-
-            // Now the active player should be PlayerO
-            assert_eq!(game.active_player, Cell::PlayerO);
-
-            // PlayerO should be able to make a move
-            assert!(game.make_move(1, Cell::PlayerO).is_ok());
-
-            // Now the active player should be PlayerX again
-            assert_eq!(game.active_player, Cell::PlayerX);
-
-            // PlayerO should not be able to make a move because it's not their turn
-            assert!(game.make_move(2, Cell::PlayerO).is_err());
-        }
-    */
     #[test]
     fn test_make_move_column_full() {
-        let con_in = ConsoleInput {};
-        let con_out = ConsoleOutput {};
-        let mut game = ConnectFour::new(con_in, con_out);
+        let mut game = ConnectFour::new();
 
         // Fill up the first column
-        for _ in 0..game.board.size() {
-            game.make_move(0, Cell::PlayerX).unwrap();
-            game.make_move(1, Cell::PlayerO).unwrap();
+        for _ in 0..game.board.cols() {
+            game.make_move(0, Player::Player1).unwrap();
+            game.make_move(1, Player::Player2).unwrap();
         }
 
         // The first column should be full
-        assert!(game.make_move(0, Cell::PlayerX).is_err());
+        assert!(game.make_move(0, Player::Player1).is_err());
     }
 
     #[test]
     fn test_check_win_horizontal() {
-        let con_in = ConsoleInput {};
-        let con_out = ConsoleOutput {};
-        let mut game = ConnectFour::new(con_in, con_out);
+        let mut game = ConnectFour::new();
 
         // No one should have won the game yet
         assert_eq!(game.check_win((0, 0), 5), None);
 
         // PlayerX makes five moves in a row
         for i in 0..5 {
-            game.make_move(i, Cell::PlayerX).unwrap();
-            game.make_move(i, Cell::PlayerO).unwrap();
+            game.make_move(i, Player::Player1).unwrap();
+            game.make_move(i, Player::Player2).unwrap();
         }
-        game.board.set_cell(game.board.size() - 1, 0, Cell::PlayerO);
+        game.board.set(game.board.cols() - 1, 0, Cell::PlayerO);
         // PlayerX should have won the game
         //(Option<(Cell, Vec<(usize, usize)>)> {
         let (win_cell, _) = game.check_win((0, 1), 5).unwrap();
@@ -440,15 +351,13 @@ mod tests {
 
     #[test]
     fn test_check_win_vertical() {
-        let con_in = ConsoleInput {};
-        let con_out = ConsoleOutput {};
-        let mut game = ConnectFour::new(con_in, con_out);
+        let mut game = ConnectFour::new();
 
         assert_eq!(game.check_win((4, 2), 5), None);
 
         for _ in 0..5 {
-            game.make_move(4, Cell::PlayerX).unwrap();
-            game.make_move(6, Cell::PlayerO).unwrap();
+            game.make_move(4, Player::Player1).unwrap();
+            game.make_move(6, Player::Player2).unwrap();
         }
         let (win_cell, _) = game.check_win((4, 2), 5).unwrap();
         assert_eq!(win_cell, (Cell::PlayerX));
@@ -456,9 +365,7 @@ mod tests {
 
     #[test]
     fn test_check_win_diagonal() {
-        let con_in = ConsoleInput {};
-        let con_out = ConsoleOutput {};
-        let mut game = ConnectFour::new(con_in, con_out);
+        let mut game = ConnectFour::new();
 
         for i in 0..5 {
             assert_eq!(game.check_win((i, i), 5), None);
@@ -469,13 +376,13 @@ mod tests {
 
         for x in 1..5 {
             for y in 0..x {
-                game.make_move(x, Cell::PlayerX).unwrap();
-                game.make_move(6 + y, Cell::PlayerO).unwrap();
+                game.make_move(x, Player::Player1).unwrap();
+                game.make_move(6 + y, Player::Player2).unwrap();
             }
         }
         for x in 0..5 {
-            game.make_move(6 + x, Cell::PlayerX).unwrap();
-            game.make_move(x, Cell::PlayerO).unwrap();
+            game.make_move(6 + x, Player::Player1).unwrap();
+            game.make_move(x, Player::Player2).unwrap();
         }
 
         for i in 0..5 {
