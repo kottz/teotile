@@ -14,7 +14,7 @@ const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 pub enum TicTacToeState {
     Playing,
     Win(SmallVec<[(usize, usize); 3]>),
-    Draw,
+    Tie,
     Finished,
 }
 
@@ -27,7 +27,7 @@ struct WinAnimationState {
 type TicTacToeBoard = Board<Cell, 3, 3>;
 
 impl TicTacToeBoard {
-    fn check_draw(&self) -> bool {
+    fn check_tie(&self) -> bool {
         self.cells.iter().flatten().all(|&cell| cell != Cell::Empty)
     }
 }
@@ -88,8 +88,8 @@ impl Game for TicTacToe {
                                     };
                                 }
                             }
-                            if self.board.check_draw() {
-                                self.state = TicTacToeState::Draw;
+                            if self.board.check_tie() {
+                                self.state = TicTacToeState::Tie;
                             }
                         }
                         CommandType::Quit => {
@@ -98,7 +98,7 @@ impl Game for TicTacToe {
                     }
                 }
             }
-            TicTacToeState::Win(_) | TicTacToeState::Draw => {
+            TicTacToeState::Win(_) | TicTacToeState::Tie => {
                 if let ButtonState::Pressed = input_command.button_state {
                     match input_command.command_type {
                         CommandType::Select => {
@@ -124,7 +124,7 @@ impl Game for TicTacToe {
             TicTacToeState::Playing => {
                 self.win_animation_state.last_update_time = self.current_time;
             }
-            TicTacToeState::Win(_) | TicTacToeState::Draw => {
+            TicTacToeState::Win(_) | TicTacToeState::Tie => {
                 if self.current_time - self.win_animation_state.last_update_time
                     > WIN_ANIMATION_SPEED
                 {
@@ -245,7 +245,7 @@ impl Game for TicTacToe {
                     //render_board.set(col * 3, row * 3, color);
                 }
             }
-            TicTacToeState::Draw => {
+            TicTacToeState::Tie => {
                 let s = self.win_animation_state.state;
                 let f: f64 = s as f64;
                 let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
@@ -445,10 +445,10 @@ mod tests {
         assert_eq!(game.check_win((1, 0)), None);
     }
     #[test]
-    fn test_draw_state() {
+    fn test_tie_state() {
         let mut game = TicTacToe::new();
 
-        // Simulate a draw state
+        // Simulate a tied state
         game._make_move((0, 0), Player::Player1).unwrap();
         game._make_move((0, 1), Player::Player2).unwrap();
         game._make_move((0, 2), Player::Player1).unwrap();
@@ -459,15 +459,15 @@ mod tests {
         game._make_move((2, 1), Player::Player2).unwrap();
         game._make_move((2, 2), Player::Player1).unwrap();
 
-        // Ensure the game state is set to Draw
-        assert!(game.board.check_draw());
+        // Ensure the game state is set to tie
+        assert!(game.board.check_tie());
     }
 
     #[test]
-    fn test_reset_after_draw() {
+    fn test_reset_after_tie() {
         let mut game = TicTacToe::new();
 
-        // Simulate a draw state
+        // Simulate a tie state
         game._make_move((0, 0), Player::Player1).unwrap();
         game._make_move((0, 1), Player::Player2).unwrap();
         game._make_move((0, 2), Player::Player1).unwrap();
@@ -478,11 +478,11 @@ mod tests {
         game._make_move((2, 1), Player::Player2).unwrap();
         game._make_move((2, 2), Player::Player1).unwrap();
 
-        // Ensure the game is a draw
-        assert!(game.board.check_draw());
+        // Ensure the game is a tie
+        assert!(game.board.check_tie());
 
-        // Manually set the game state to Draw
-        game.state = TicTacToeState::Draw;
+        // Manually set the game state to tie
+        game.state = TicTacToeState::Tie;
 
         // Simulate a reset
         let reset_command = GameCommand {
