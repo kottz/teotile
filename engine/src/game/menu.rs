@@ -31,7 +31,6 @@ impl Game for GameType {
         match self {
             GameType::ConnectFour(game) => game.process_input(input_command),
             GameType::TicTacToe(game) => game.process_input(input_command),
-            // GameType::TicTacToe(game) => game.process_input(input_command),
             // GameType::Snake(game) => game.process_input(input_command),
         }
     }
@@ -40,7 +39,6 @@ impl Game for GameType {
         match self {
             GameType::ConnectFour(game) => game.update(delta_time),
             GameType::TicTacToe(game) => game.update(delta_time),
-            // GameType::TicTacToe(game) => game.update(delta_time),
             // GameType::Snake(game) => game.update(delta_time),
         }
     }
@@ -49,23 +47,14 @@ impl Game for GameType {
         match self {
             GameType::ConnectFour(game) => game.render(),
             GameType::TicTacToe(game) => game.render(),
-            // GameType::TicTacToe(game) => game.render(),
             // GameType::Snake(game) => game.render(),
         }
     }
 }
-// lazy_static! {
-//     static ref GAMES: [Box<dyn Game + Sync>; 1] = [
-//         &ConnectFour,
-//         // &TicTacToe,
-//         // &Snake,
-//     ];
-// }
 
 impl Menu {
     pub fn new() -> Self {
         Self {
-            //games,
             active_game_index: 0,
             state: MenuState::Selecting,
         }
@@ -86,9 +75,7 @@ impl Menu {
             self.active_game_index = 0;
         }
     }
-    // fn select_game(&mut self) {
-    //     self.state = MenuState::RunningGame(self.active_game_index);
-    // }
+
     fn select_game(&mut self) {
         let game_state = match self.active_game_index {
             0 => GameType::ConnectFour(ConnectFour::new()),
@@ -98,18 +85,6 @@ impl Menu {
         };
         self.state = MenuState::RunningGame(game_state);
     }
-
-    // fn process_game_input<T: Game>(&self, game: &mut T, input_command: GameCommand) -> Result<()> {
-    //     game.process_input(input_command)
-    // }
-    //
-    // fn update_game(&mut self, game_state: &mut GameType, delta_time: Duration) -> Result<()> {
-    //     game_state.update(delta_time)
-    // }
-    //
-    // fn render_game(&self, game_state: &GameType) -> Result<RenderBoard> {
-    //     game_state.render()
-    // }
 }
 
 impl Default for Menu {
@@ -139,7 +114,6 @@ impl Game for Menu {
             }
             MenuState::RunningGame(game_state) => {
                 game_state.process_input(input_command)?;
-                //self.process_game_input(game_state, input_command)?;
                 if let ButtonState::Pressed = input_command.button_state {
                     if input_command.command_type == CommandType::Quit {
                         self.state = MenuState::Selecting;
@@ -153,24 +127,23 @@ impl Game for Menu {
     fn update(&mut self, delta_time: Duration) -> Result<()> {
         if let MenuState::RunningGame(game_state) = &mut self.state {
             let _ = game_state.update(delta_time);
-            //self.games[*index].update(delta_time)?;
         }
         Ok(())
     }
 
     fn render(&self) -> Result<RenderBoard> {
-        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
         let mut render_board = RenderBoard::new();
         match &self.state {
             MenuState::Selecting => {
                 //Render main menu
                 for i in 0..NUM_GAMES {
                     let rgb = if i == self.active_game_index {
-                        RGB::new(255, 255, 255) // Highlight selected game
+                        RGB::new(255, 255, 255)
                     } else {
                         RGB::new(100, 100, 100)
                     };
-                    // Display game name or some representation
+                    // TODO: add pixel art images for each game
+                    // to make it possible to discern
                     render_board.set(i % GRID_SIZE, i / GRID_SIZE, rgb);
                 }
             }
@@ -179,22 +152,6 @@ impl Game for Menu {
             }
         }
         Ok(render_board)
-        // if let MenuState::RunningGame(index) = &self.state {
-        //     return self.games[*index].render();
-        // }
-
-        // Render main menu
-        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
-        // for (i, game) in self.games.iter().enumerate() {
-        //     let rgb = if i == self.active_game_index {
-        //         RGB::new(255, 255, 255) // Highlight selected game
-        //     } else {
-        //         RGB::new(100, 100, 100)
-        //     };
-        //     // Display game name or some representation
-        //     render_board.set(i % GRID_SIZE, i / GRID_SIZE, rgb);
-        // }
-        //Ok(render_board)
     }
 }
 
