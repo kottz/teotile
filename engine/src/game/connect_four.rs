@@ -15,6 +15,7 @@ const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 pub enum ConnectFourState {
     Playing,
     Win(SmallVec<[(usize, usize); GRID_SIZE]>),
+    Tie,
     Finished,
 }
 
@@ -151,11 +152,19 @@ impl ConnectFour {
             if let Some(winning_line) =
                 self.check_line(x as i32, y as i32, dx, dy, player, in_a_row)
             {
-                ////println!("Winning line: {:?}", winning_line);
                 return Some((player, winning_line));
             }
         }
         None
+    }
+
+    fn check_draw(&self) -> bool {
+        for col in 0..self.board.cols() {
+            if self.board.get(col, self.board.rows() - 1) == Cell::Empty {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -185,11 +194,14 @@ impl Game for ConnectFour {
                                 let win = self.check_win(place, self.in_a_row);
                                 if let Some((_, winning_line)) = win {
                                     self.state = ConnectFourState::Win(winning_line);
+                                } else if self.check_draw() {
+                                    self.state = ConnectFourState::Tie;
+                                } else {
+                                    self.active_player = match self.active_player {
+                                        Player::Player1 => Player::Player2,
+                                        Player::Player2 => Player::Player1,
+                                    };
                                 }
-                                self.active_player = match self.active_player {
-                                    Player::Player1 => Player::Player2,
-                                    Player::Player2 => Player::Player1,
-                                };
                             }
                         }
                         CommandType::Quit => {
@@ -199,7 +211,7 @@ impl Game for ConnectFour {
                     }
                 }
             }
-            ConnectFourState::Win(_) => {
+            ConnectFourState::Win(_) | ConnectFourState::Tie => {
                 if let ButtonState::Pressed = input_command.button_state {
                     match input_command.command_type {
                         CommandType::Select => {
@@ -225,7 +237,7 @@ impl Game for ConnectFour {
             ConnectFourState::Playing => {
                 self.win_animation_state.last_update_time = self.current_time;
             }
-            ConnectFourState::Win(_) => {
+            ConnectFourState::Win(_) | ConnectFourState::Tie => {
                 if self.current_time - self.win_animation_state.last_update_time
                     > WIN_ANIMATION_SPEED
                 {
@@ -294,6 +306,17 @@ impl Game for ConnectFour {
                 let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
                 for (col, row) in winning_line {
                     render_board.set(*col, *row, color);
+                }
+            }
+            ConnectFourState::Tie => {
+                for col in 0..self.board.cols() {
+                    for row in 0..self.board.rows() {
+                        let s = self.win_animation_state.state;
+                        let f: f64 = s as f64;
+                        let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
+                        let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                        render_board.set(col, row, color);
+                    }
                 }
             }
             ConnectFourState::Finished => {}
@@ -391,6 +414,7 @@ mod tests {
         let (win_cell, _) = game.check_win((3, 3), 4).unwrap();
         assert_eq!(win_cell, Cell::PlayerX);
     }
+
     #[test]
     fn test_check_win_diagonal_opposite() {
         let mut game = ConnectFour::new();
@@ -413,5 +437,27 @@ mod tests {
         // PlayerX should have won the game with a diagonal in the opposite direction
         let (win_cell, _) = game.check_win((0, 3), 4).unwrap();
         assert_eq!(win_cell, Cell::PlayerX);
+    }
+
+    #[test]
+    fn test_check_tie() {
+        let mut game = ConnectFour::new();
+
+        // This is not actually a draw but we are testing the check_draw function
+        // with a full board.
+        for col in 0..game.board.cols() {
+            for row in 0..game.board.rows() {
+                if row % 2 == 0 {
+                    //game.board.set(col, row, Cell::PlayerX);
+                    game.make_move(col, Player::Player1).unwrap();
+                } else {
+                    //game.board.set(col, row, Cell::PlayerO);
+                    game.make_move(col, Player::Player2).unwrap();
+                }
+            }
+        }
+
+        // The game should be in a Tie state
+        assert!(game.check_draw());
     }
 }
