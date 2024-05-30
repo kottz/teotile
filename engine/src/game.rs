@@ -79,14 +79,14 @@ pub enum Player {
     Player2,
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Board<T, const ROWS: usize, const COLS: usize> {
-    pub cells: [[T; COLS]; ROWS],
+pub struct Board<T, const COLS: usize, const ROWS: usize> {
+    pub cells: [[T; ROWS]; COLS],
 }
 
-impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Board<T, ROWS, COLS> {
+impl<T: Copy + Default, const COLS: usize, const ROWS: usize> Board<T, COLS, ROWS> {
     pub fn new() -> Self {
         Self {
-            cells: [[T::default(); COLS]; ROWS],
+            cells: [[T::default(); ROWS]; COLS],
         }
     }
 
@@ -98,16 +98,16 @@ impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Board<T, ROWS, COL
         COLS
     }
 
-    pub fn set(&mut self, row: usize, col: usize, value: T) {
-        self.cells[row][col] = value;
+    pub fn set(&mut self, col: usize, row: usize, value: T) {
+        self.cells[col][row] = value;
     }
 
-    pub fn get(&self, x: usize, y: usize) -> T {
-        self.cells[x][y]
+    pub fn get(&self, col: usize, row: usize) -> T {
+        self.cells[col][row]
     }
 }
 
-impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Default for Board<T, ROWS, COLS> {
+impl<T: Copy + Default, const COLS: usize, const ROWS: usize> Default for Board<T, COLS, ROWS> {
     fn default() -> Self {
         Self::new()
     }

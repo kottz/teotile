@@ -24,7 +24,7 @@ struct WinAnimationState {
     last_update_time: Duration,
 }
 
-pub type GameBoard = Board<Cell, GRID_SIZE, GRID_SIZE>;
+pub type GameBoard = Board<Cell, 7, 6>;
 
 pub struct ConnectFour {
     pub board: GameBoard,
@@ -34,143 +34,6 @@ pub struct ConnectFour {
     pub state: ConnectFourState,
     win_animation_state: WinAnimationState,
     current_time: Duration,
-}
-
-impl Game for ConnectFour {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
-        match &self.state {
-            ConnectFourState::Playing => {
-                if input_command.player != self.active_player {
-                    return Ok(());
-                }
-
-                if let ButtonState::Pressed = input_command.button_state {
-                    match input_command.command_type {
-                        CommandType::Left => {
-                            let _ = self.move_col(CommandType::Left);
-                        }
-                        CommandType::Right => {
-                            let _ = self.move_col(CommandType::Right);
-                        }
-                        CommandType::Select => {
-                            if let Ok(place) = self.make_move(self.active_col, self.active_player) {
-                                let win = self.check_win(place, self.in_a_row);
-                                if let Some((_, winning_line)) = win {
-                                    self.state = ConnectFourState::Win(winning_line);
-                                }
-                                self.active_player = match self.active_player {
-                                    Player::Player1 => Player::Player2,
-                                    Player::Player2 => Player::Player1,
-                                };
-                            }
-                        }
-                        CommandType::Quit => {
-                            self.state = ConnectFourState::Finished;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            ConnectFourState::Win(_) => {
-                if let ButtonState::Pressed = input_command.button_state {
-                    match input_command.command_type {
-                        CommandType::Select => {
-                            self.state = ConnectFourState::Playing;
-                            self.board = GameBoard::new();
-                            self.active_player = Player::Player1;
-                            self.active_col = 0;
-                        }
-                        _ => return Ok(()),
-                    }
-                }
-            }
-            ConnectFourState::Finished => {}
-        }
-
-        Ok(())
-    }
-
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
-        self.current_time += delta_time;
-
-        match &self.state {
-            ConnectFourState::Playing => {
-                self.win_animation_state.last_update_time = self.current_time;
-            }
-            ConnectFourState::Win(_) => {
-                if self.current_time - self.win_animation_state.last_update_time
-                    > WIN_ANIMATION_SPEED
-                {
-                    self.win_animation_state.last_update_time = self.current_time;
-
-                    if self.win_animation_state.state >= 20 {
-                        self.win_animation_state.state = 0;
-                    } else {
-                        self.win_animation_state.state += 1;
-                    }
-                }
-            }
-            ConnectFourState::Finished => {}
-        }
-        Ok(())
-    }
-
-    fn render(&self) -> Result<RenderBoard> {
-        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
-        let mut render_board = RenderBoard::new();
-
-        match &self.state {
-            ConnectFourState::Playing => {
-                for row in 0..self.board.rows() {
-                    for col in 0..self.board.cols() {
-                        let cell = self.board.get(col, row);
-                        let mut rgb = RGB::new(0, 0, 0);
-                        if col == self.active_col {
-                            match &self.active_player {
-                                Player::Player1 => {
-                                    rgb = RGB::new(230, 166, 83);
-                                }
-                                Player::Player2 => {
-                                    rgb = RGB::new(125, 113, 191);
-                                }
-                            }
-                        }
-                        match cell {
-                            Cell::PlayerX => {
-                                rgb = RGB::new(255, 0, 0);
-                            }
-                            Cell::PlayerO => {
-                                rgb = RGB::new(0, 0, 255);
-                            }
-                            _ => {}
-                        }
-                        render_board.set(col, row, rgb);
-                    }
-                }
-            }
-            ConnectFourState::Win(winning_line) => {
-                // reset color in active column
-                for row in 0..self.board.rows() {
-                    for col in 0..self.board.cols() {
-                        if col == self.active_col && self.board.get(col, row) == Cell::Empty {
-                            let rgb = RGB::new(0, 0, 0);
-                            render_board.set(col, row, rgb);
-                        }
-                    }
-                }
-
-                let s = self.win_animation_state.state;
-                let f: f64 = s as f64;
-                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
-                for (col, row) in winning_line {
-                    render_board.set(*col, *row, color);
-                }
-            }
-            ConnectFourState::Finished => {}
-        }
-        Ok(render_board)
-    }
 }
 
 impl ConnectFour {
@@ -210,8 +73,12 @@ impl ConnectFour {
         if x > self.board.cols() {
             return Err(anyhow::anyhow!("Invalid move"));
         }
-
-        if self.board.get(x, self.board.cols() - 1) != Cell::Empty {
+        // println!(
+        //     "Making move x: {}, rows() - 1: {}",
+        //     x,
+        //     self.board.rows() - 1
+        // );
+        if self.board.get(x, self.board.rows() - 1) != Cell::Empty {
             return Err(anyhow::anyhow!("Column is full"));
         }
         let mut place: (usize, usize) = (x, 0);
@@ -297,6 +164,143 @@ impl Default for ConnectFour {
         Self::new()
     }
 }
+impl Game for ConnectFour {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+        match &self.state {
+            ConnectFourState::Playing => {
+                if input_command.player != self.active_player {
+                    return Ok(());
+                }
+
+                if let ButtonState::Pressed = input_command.button_state {
+                    match input_command.command_type {
+                        CommandType::Left => {
+                            let _ = self.move_col(CommandType::Left);
+                        }
+                        CommandType::Right => {
+                            let _ = self.move_col(CommandType::Right);
+                        }
+                        CommandType::Select => {
+                            if let Ok(place) = self.make_move(self.active_col, self.active_player) {
+                                let win = self.check_win(place, self.in_a_row);
+                                if let Some((_, winning_line)) = win {
+                                    self.state = ConnectFourState::Win(winning_line);
+                                }
+                                self.active_player = match self.active_player {
+                                    Player::Player1 => Player::Player2,
+                                    Player::Player2 => Player::Player1,
+                                };
+                            }
+                        }
+                        CommandType::Quit => {
+                            self.state = ConnectFourState::Finished;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            ConnectFourState::Win(_) => {
+                if let ButtonState::Pressed = input_command.button_state {
+                    match input_command.command_type {
+                        CommandType::Select => {
+                            self.state = ConnectFourState::Playing;
+                            self.board = GameBoard::new();
+                            self.active_player = Player::Player1;
+                            self.active_col = 0;
+                        }
+                        _ => return Ok(()),
+                    }
+                }
+            }
+            ConnectFourState::Finished => {}
+        }
+
+        Ok(())
+    }
+
+    fn update(&mut self, delta_time: Duration) -> Result<()> {
+        self.current_time += delta_time;
+
+        match &self.state {
+            ConnectFourState::Playing => {
+                self.win_animation_state.last_update_time = self.current_time;
+            }
+            ConnectFourState::Win(_) => {
+                if self.current_time - self.win_animation_state.last_update_time
+                    > WIN_ANIMATION_SPEED
+                {
+                    self.win_animation_state.last_update_time = self.current_time;
+
+                    if self.win_animation_state.state >= 20 {
+                        self.win_animation_state.state = 0;
+                    } else {
+                        self.win_animation_state.state += 1;
+                    }
+                }
+            }
+            ConnectFourState::Finished => {}
+        }
+        Ok(())
+    }
+
+    fn render(&self) -> Result<RenderBoard> {
+        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
+        let mut render_board = RenderBoard::new();
+
+        match &self.state {
+            ConnectFourState::Playing => {
+                for col in 0..self.board.cols() {
+                    for row in 0..self.board.rows() {
+                        //let cell = self.board.get(col, row);
+                        let cell = self.board.get(col, row); //why does ot crash when I switch row and col?
+                        let mut rgb = RGB::new(0, 0, 0);
+                        if col == self.active_col {
+                            match &self.active_player {
+                                Player::Player1 => {
+                                    rgb = RGB::new(230, 166, 83);
+                                }
+                                Player::Player2 => {
+                                    rgb = RGB::new(125, 113, 191);
+                                }
+                            }
+                        }
+                        match cell {
+                            Cell::PlayerX => {
+                                rgb = RGB::new(255, 0, 0);
+                            }
+                            Cell::PlayerO => {
+                                rgb = RGB::new(0, 0, 255);
+                            }
+                            _ => {}
+                        }
+                        render_board.set(col, row, rgb);
+                    }
+                }
+            }
+            ConnectFourState::Win(winning_line) => {
+                // reset color in active column
+                for col in 0..self.board.cols() {
+                    for row in 0..self.board.rows() {
+                        if col == self.active_col && self.board.get(col, row) == Cell::Empty {
+                            let rgb = RGB::new(0, 0, 0);
+                            render_board.set(col, row, rgb);
+                        }
+                    }
+                }
+
+                let s = self.win_animation_state.state;
+                let f: f64 = s as f64;
+                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
+                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                for (col, row) in winning_line {
+                    render_board.set(*col, *row, color);
+                }
+            }
+            ConnectFourState::Finished => {}
+        }
+        Ok(render_board)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -322,7 +326,7 @@ mod tests {
         let mut game = ConnectFour::new();
 
         // Fill up the first column
-        for _ in 0..game.board.cols() {
+        for _ in 0..game.board.rows() {
             game.make_move(0, Player::Player1).unwrap();
             game.make_move(1, Player::Player2).unwrap();
         }
@@ -368,31 +372,46 @@ mod tests {
     fn test_check_win_diagonal() {
         let mut game = ConnectFour::new();
 
-        for i in 0..5 {
-            assert_eq!(game.check_win((i, i), 5), None);
-        }
-        for i in 0..5 {
-            assert_eq!(game.check_win((6 + i, 4 - i), 5), None);
-        }
+        // No one should have won the game yet
+        assert_eq!(game.check_win((0, 0), 4), None);
 
-        for x in 1..5 {
-            for y in 0..x {
-                game.make_move(x, Player::Player1).unwrap();
-                game.make_move(6 + y, Player::Player2).unwrap();
-            }
-        }
-        for x in 0..5 {
-            game.make_move(6 + x, Player::Player1).unwrap();
-            game.make_move(x, Player::Player2).unwrap();
-        }
+        // PlayerX makes four moves diagonally
+        game.make_move(0, Player::Player1).unwrap(); // (0, 0)
+        game.make_move(1, Player::Player2).unwrap();
+        game.make_move(1, Player::Player1).unwrap(); // (1, 1)
+        game.make_move(2, Player::Player2).unwrap();
+        game.make_move(2, Player::Player2).unwrap();
+        game.make_move(2, Player::Player1).unwrap(); // (2, 2)
+        game.make_move(3, Player::Player2).unwrap();
+        game.make_move(3, Player::Player2).unwrap();
+        game.make_move(3, Player::Player2).unwrap();
+        game.make_move(3, Player::Player1).unwrap(); // (3, 3)
 
-        for i in 0..5 {
-            let (win_cell, _) = game.check_win((i, i), 5).unwrap();
-            assert_eq!(win_cell, (Cell::PlayerO));
-        }
-        for i in 0..5 {
-            let (win_cell, _) = game.check_win((6 + i, 4 - i), 5).unwrap();
-            assert_eq!(win_cell, (Cell::PlayerX));
-        }
+        // PlayerX should have won the game with a diagonal
+        let (win_cell, _) = game.check_win((3, 3), 4).unwrap();
+        assert_eq!(win_cell, Cell::PlayerX);
+    }
+    #[test]
+    fn test_check_win_diagonal_opposite() {
+        let mut game = ConnectFour::new();
+
+        // No one should have won the game yet
+        assert_eq!(game.check_win((0, 0), 4), None);
+
+        // PlayerX makes four moves diagonally (opposite direction)
+        game.make_move(3, Player::Player1).unwrap(); // (3, 0)
+        game.make_move(2, Player::Player2).unwrap();
+        game.make_move(2, Player::Player1).unwrap(); // (2, 1)
+        game.make_move(1, Player::Player2).unwrap();
+        game.make_move(1, Player::Player2).unwrap();
+        game.make_move(1, Player::Player1).unwrap(); // (1, 2)
+        game.make_move(0, Player::Player2).unwrap();
+        game.make_move(0, Player::Player2).unwrap();
+        game.make_move(0, Player::Player2).unwrap();
+        game.make_move(0, Player::Player1).unwrap(); // (0, 3)
+
+        // PlayerX should have won the game with a diagonal in the opposite direction
+        let (win_cell, _) = game.check_win((0, 3), 4).unwrap();
+        assert_eq!(win_cell, Cell::PlayerX);
     }
 }
