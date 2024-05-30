@@ -132,8 +132,9 @@ impl Game for TicTacToe {
 
                     if self.win_animation_state.state >= 20 {
                         self.win_animation_state.state = 0;
+                    } else {
+                        self.win_animation_state.state += 1;
                     }
-                    self.win_animation_state.state += 1;
                 }
             }
             TicTacToeState::Finished => {}
