@@ -5,3 +5,6 @@ members = [
     "tui",
     "embedded",
 ]
+default-members = [
+    "tui",
+]
