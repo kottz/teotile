@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 
 mod game;
 pub use game::RenderBoard;

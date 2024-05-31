@@ -4,10 +4,12 @@ use core::time::Duration;
 mod connect_four;
 mod menu;
 mod tictactoe;
+mod flappy_bird;
 
 use connect_four::ConnectFour;
 use menu::Menu;
 use tictactoe::TicTacToe;
+use flappy_bird::FlappyBird;
 
 pub const GRID_SIZE: usize = 12;
 
