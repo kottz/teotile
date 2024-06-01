@@ -25,6 +25,15 @@ struct WinAnimationState {
     last_update_time: Duration,
 }
 
+impl WinAnimationState {
+    fn new() -> Self {
+        Self {
+            state: 0,
+            last_update_time: Duration::from_millis(0),
+        }
+    }
+}
+
 pub type GameBoard = Board<Cell, 7, 6>;
 
 pub struct ConnectFour {
@@ -45,10 +54,7 @@ impl ConnectFour {
             active_player: Player::Player1,
             active_col: 0,
             state: ConnectFourState::Playing,
-            win_animation_state: WinAnimationState {
-                state: 0,
-                last_update_time: Duration::from_millis(0),
-            },
+            win_animation_state: WinAnimationState::new(), 
             current_time: Duration::from_millis(0),
         }
     }

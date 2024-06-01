@@ -16,11 +16,29 @@
 
 use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
 
-use smallvec::SmallVec;
 use core::time::Duration;
+use libm::{fabs, sin};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use smallvec::SmallVec;
 const GRID_SIZE: usize = 12;
+const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+
 //pub type FlappyBirdBoard = Board<RGB, 12, 12>;
+
+#[derive(Debug, PartialEq)]
+struct GameOverAnimationState {
+    state: usize,
+    last_update_time: Duration,
+}
+
+impl GameOverAnimationState {
+    fn new() -> Self {
+        Self {
+            state: 0,
+            last_update_time: Duration::from_millis(0),
+        }
+    }
+}
 
 struct Player {
     col: usize,
@@ -29,6 +47,7 @@ struct Player {
     start_velocity: f64,
     acceleration: f64,
     time: f64,
+    game_over_animation_state: GameOverAnimationState,
 }
 
 impl Player {
@@ -40,6 +59,7 @@ impl Player {
             start_velocity: 0.0, // This is effectively the jump height
             acceleration: -0.2,  // this is the gravity
             time: 0.0,
+            game_over_animation_state: GameOverAnimationState::new(),
         }
     }
 
@@ -82,7 +102,7 @@ impl Player {
             self.pos = (GRID_SIZE - 1) as f64;
         }
 
-        let speed_multiplier = 10.0;
+        let speed_multiplier = 15.0; //10.0;
         self.time += speed_multiplier * delta_time;
     }
 
@@ -95,10 +115,12 @@ pub struct FlappyBird {
     state: FlappyBirdState,
     player: Player,
     walls: SmallVec<[Wall; GRID_SIZE]>,
+    current_time: Duration,
     wall_gap: usize,
     wall_period: f64,
     last_wall_time: f64,
     smallrng: SmallRng,
+    game_over_animation_state: GameOverAnimationState,
 }
 
 enum FlappyBirdState {
@@ -112,11 +134,13 @@ impl FlappyBird {
             state: FlappyBirdState::Playing,
             player: Player::new(),
             walls: SmallVec::<[Wall; GRID_SIZE]>::new(),
+            current_time: Duration::from_millis(0),
             wall_gap: 8,
-            wall_period: 0.3,
+            wall_period: 0.18,
             last_wall_time: 0.0,
             smallrng: SmallRng::seed_from_u64(55098345123984287), // maybe see if you can get this from
-                                                                  // system time or something
+            // system time or something
+            game_over_animation_state: GameOverAnimationState::new(),
         }
     }
 
@@ -170,6 +194,17 @@ impl Game for FlappyBird {
                 }
             }
             FlappyBirdState::GameOver => {
+                if let ButtonState::Pressed = input_command.button_state {
+                    match input_command.command_type {
+                        CommandType::Select => {
+                            self.state = FlappyBirdState::Playing;
+                            self.walls.clear();
+                            self.player = Player::new();
+                        }
+                        _ => return Ok(()),
+                    }
+                }
+
                 // TODO
             }
         }
@@ -177,24 +212,15 @@ impl Game for FlappyBird {
     }
 
     fn update(&mut self, delta_time: Duration) -> Result<()> {
+        self.current_time += delta_time;
         match &self.state {
             FlappyBirdState::Playing => {
-                // this should convert the duration to some sort of float I can send to the player
-                let delta_time = delta_time.as_secs_f64();
-                self.player.update_position(delta_time);
+                let dt = delta_time.as_secs_f64();
+                self.player.update_position(dt);
                 if self.detect_collisions() {
                     self.state = FlappyBirdState::GameOver;
                 }
 
-                self.last_wall_time += delta_time;
-
-                // if self.last_wall_time > wall_gap as f64 / wall_speed {
-                //     //self.move_walls_left();
-                //     self.add_wall();
-                //     self.last_wall_time = 0.0;
-                // }
-
-                // tänk på last wall time som vanlig timer
                 if self.last_wall_time > self.wall_period {
                     self.move_walls_left();
                     self.last_wall_time = 0.0;
@@ -209,8 +235,21 @@ impl Game for FlappyBird {
                 if self.walls.is_empty() {
                     self.add_wall();
                 }
+
+                self.last_wall_time += dt;
             }
             FlappyBirdState::GameOver => {
+                if self.current_time - self.game_over_animation_state.last_update_time
+                    > WIN_ANIMATION_SPEED
+                {
+                    self.game_over_animation_state.last_update_time = self.current_time;
+
+                    if self.game_over_animation_state.state >= 20 {
+                        self.game_over_animation_state.state = 0;
+                    } else {
+                        self.game_over_animation_state.state += 1;
+                    }
+                }
                 //TODO
             }
         }
@@ -219,13 +258,43 @@ impl Game for FlappyBird {
 
     fn render(&self) -> Result<RenderBoard> {
         let mut render_board = RenderBoard::new();
-        for wall in self.walls.iter() {
-            for row in (0..wall.gap_row).chain((wall.gap_row + wall.gap_size)..GRID_SIZE) {
-                //render_board[wall.col][row] = RGB::new(255, 0, 0);
-                render_board.set(wall.col, row, RGB::new(255, 0, 0));
+        match &self.state {
+            FlappyBirdState::Playing => {
+                for wall in self.walls.iter() {
+                    for row in (0..wall.gap_row).chain((wall.gap_row + wall.gap_size)..GRID_SIZE) {
+                        //render_board[wall.col][row] = RGB::new(255, 0, 0);
+                        render_board.set(wall.col, row, RGB::new(255, 0, 0));
+                    }
+                }
+                render_board.set(self.player.col, self.player.row(), RGB::new(0, 255, 0));
+            }
+            FlappyBirdState::GameOver => {
+                // for wall in self.walls.iter() {
+                //     for row in (0..wall.gap_row).chain((wall.gap_row + wall.gap_size)..GRID_SIZE) {
+                //         //render_board[wall.col][row] = RGB::new(255, 0, 0);
+                //         render_board.set(wall.col, row, RGB::new(255, 0, 0));
+                //     }
+                // }
+                render_board.set(self.player.col, self.player.row(), RGB::new(0, 255, 0));
+
+                if let Some(first) = self.walls.first() {
+                    if first.col == 0 {
+                        for row in
+                            (0..first.gap_row).chain((first.gap_row + first.gap_size)..GRID_SIZE)
+                        {
+                            let s = self.game_over_animation_state.state;
+                            let f: f64 = s as f64;
+                            let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
+                            let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                            render_board.set(0, row, color);
+                            //render_board.set(0, row, RGB::new(255, 255, 255));
+                        }
+                        //render_board.set(0, 0, RGB::new(255, 255, 255));
+                    }
+                    render_board.set(self.player.col, self.player.row(), RGB::new(189, 20, 20));
+                }
             }
         }
-        render_board.set(self.player.col, self.player.row(), RGB::new(0, 255, 0));
 
         Ok(render_board)
     }

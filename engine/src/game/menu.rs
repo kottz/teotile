@@ -7,9 +7,10 @@ use core::time::Duration;
 use crate::game::ConnectFour;
 use crate::game::TicTacToe;
 use crate::game::FlappyBird;
+use crate::game::SnakeGame;
 
 use crate::GRID_SIZE;
-const NUM_GAMES: usize = 3;
+const NUM_GAMES: usize = 4;
 
 enum MenuState {
     Selecting,
@@ -25,6 +26,7 @@ enum GameType {
     ConnectFour(ConnectFour),
     TicTacToe(TicTacToe),
     FlappyBird(FlappyBird),
+    Snake(SnakeGame),
 }
 
 impl Game for GameType {
@@ -33,7 +35,7 @@ impl Game for GameType {
             GameType::ConnectFour(game) => game.process_input(input_command),
             GameType::TicTacToe(game) => game.process_input(input_command),
             GameType::FlappyBird(game) => game.process_input(input_command),
-            // GameType::Snake(game) => game.process_input(input_command),
+            GameType::Snake(game) => game.process_input(input_command),
         }
     }
 
@@ -42,7 +44,7 @@ impl Game for GameType {
             GameType::ConnectFour(game) => game.update(delta_time),
             GameType::TicTacToe(game) => game.update(delta_time),
             GameType::FlappyBird(game) => game.update(delta_time),
-            // GameType::Snake(game) => game.update(delta_time),
+            GameType::Snake(game) => game.update(delta_time),
         }
     }
 
@@ -51,7 +53,7 @@ impl Game for GameType {
             GameType::ConnectFour(game) => game.render(),
             GameType::TicTacToe(game) => game.render(),
             GameType::FlappyBird(game) => game.render(),
-            // GameType::Snake(game) => game.render(),
+            GameType::Snake(game) => game.render(),
         }
     }
 }
@@ -85,7 +87,7 @@ impl Menu {
             0 => GameType::ConnectFour(ConnectFour::new()),
             1 => GameType::TicTacToe(TicTacToe::new()),
             2 => GameType::FlappyBird(FlappyBird::new()),
-            // 2 => GameType::Snake(Snake::new()),
+            3 => GameType::Snake(SnakeGame::new()),
             _ => unreachable!(),
         };
         self.state = MenuState::RunningGame(game_state);

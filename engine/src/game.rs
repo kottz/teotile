@@ -5,11 +5,13 @@ mod connect_four;
 mod menu;
 mod tictactoe;
 mod flappy_bird;
+mod snake;
 
 use connect_four::ConnectFour;
 use menu::Menu;
 use tictactoe::TicTacToe;
 use flappy_bird::FlappyBird;
+use snake::SnakeGame;
 
 pub const GRID_SIZE: usize = 12;
 

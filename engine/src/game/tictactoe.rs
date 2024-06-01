@@ -28,7 +28,7 @@ type TicTacToeBoard = Board<Cell, 3, 3>;
 
 impl TicTacToeBoard {
     fn check_tie(&self) -> bool {
-        self.cells.iter().flatten().all(|&cell| cell != Cell::Empty)
+        self.cells.iter().flatten().all(|&cell| cell != Cell::Empty) //&& self.check_win().is_none()
     }
 }
 
@@ -236,9 +236,11 @@ impl Game for TicTacToe {
                 for (col, row) in winning_line {
                     match self.active_player {
                         Player::Player1 => {
+                            let color = RGB::new(s as u8 * 0, s as u8 * 10, s as u8 * 0);
                             draw_x(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                         Player::Player2 => {
+                            let color = RGB::new(s as u8 * 10, s as u8 * 0, s as u8 * 0);
                             draw_o(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                     }
