@@ -2,16 +2,16 @@ use anyhow::Result;
 use core::time::Duration;
 
 mod connect_four;
-mod menu;
-mod tictactoe;
 mod flappy_bird;
+mod menu;
 mod snake;
+mod tictactoe;
 
 use connect_four::ConnectFour;
-use menu::Menu;
-use tictactoe::TicTacToe;
 use flappy_bird::FlappyBird;
+use menu::Menu;
 use snake::SnakeGame;
+use tictactoe::TicTacToe;
 
 pub const GRID_SIZE: usize = 12;
 
@@ -25,7 +25,7 @@ pub struct RGB {
 }
 
 impl RGB {
-    fn new(r: u8, g: u8, b: u8) -> Self {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
 }
@@ -123,9 +123,7 @@ pub struct GameEngine<T: Game = Menu> {
 
 impl Default for GameEngine<Menu> {
     fn default() -> Self {
-        Self {
-            game: Menu::new(),
-        }
+        Self { game: Menu::new() }
     }
 }
 

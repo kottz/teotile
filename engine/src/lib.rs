@@ -1,7 +1,7 @@
 #![no_std]
 
-mod game;
 mod animation;
+mod game;
 pub use game::RenderBoard;
 pub use game::RGB;
 pub use game::{

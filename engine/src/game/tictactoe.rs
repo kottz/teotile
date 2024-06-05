@@ -1,9 +1,9 @@
+use crate::animation::Animation;
 use crate::game::{Board, ButtonState, Cell, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::RGB;
 use anyhow::Result;
 use core::time::Duration;
-use libm::{fabs, sin};
 use smallvec::SmallVec;
 
 use super::Player;
@@ -16,12 +16,6 @@ pub enum TicTacToeState {
     Win(SmallVec<[(usize, usize); 3]>),
     Tie,
     Finished,
-}
-
-#[derive(Debug, PartialEq)]
-struct WinAnimationState {
-    state: usize,
-    last_update_time: Duration,
 }
 
 type TicTacToeBoard = Board<Cell, 3, 3>;
@@ -37,7 +31,7 @@ pub struct TicTacToe {
     active_player: Player,
     active_cell: (usize, usize),
     pub state: TicTacToeState,
-    win_animation_state: WinAnimationState,
+    win_animation: Animation,
     current_time: Duration,
 }
 
@@ -121,21 +115,9 @@ impl Game for TicTacToe {
         self.current_time += delta_time;
 
         match &self.state {
-            TicTacToeState::Playing => {
-                self.win_animation_state.last_update_time = self.current_time;
-            }
+            TicTacToeState::Playing => {}
             TicTacToeState::Win(_) | TicTacToeState::Tie => {
-                if self.current_time - self.win_animation_state.last_update_time
-                    > WIN_ANIMATION_SPEED
-                {
-                    self.win_animation_state.last_update_time = self.current_time;
-
-                    if self.win_animation_state.state >= 20 {
-                        self.win_animation_state.state = 0;
-                    } else {
-                        self.win_animation_state.state += 1;
-                    }
-                }
+                self.win_animation.update(self.current_time);
             }
             TicTacToeState::Finished => {}
         }
@@ -229,18 +211,15 @@ impl Game for TicTacToe {
                 }
             }
             TicTacToeState::Win(winning_line) => {
-                let s = self.win_animation_state.state;
-                let f: f64 = s as f64;
-                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                let color = self.win_animation.get_color();
                 for (col, row) in winning_line {
                     match self.active_player {
                         Player::Player1 => {
-                            let color = RGB::new(s as u8 * 0, s as u8 * 10, s as u8 * 0);
+                            //let color = RGB::new(s as u8 * 0, s as u8 * 10, s as u8 * 0);
                             draw_x(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                         Player::Player2 => {
-                            let color = RGB::new(s as u8 * 10, s as u8 * 0, s as u8 * 0);
+                            //let color = RGB::new(s as u8 * 10, s as u8 * 0, s as u8 * 0);
                             draw_o(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                     }
@@ -248,10 +227,7 @@ impl Game for TicTacToe {
                 }
             }
             TicTacToeState::Tie => {
-                let s = self.win_animation_state.state;
-                let f: f64 = s as f64;
-                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                let color = self.win_animation.get_color();
                 for col in 0..self.board.cols() {
                     for row in 0..self.board.rows() {
                         match self.board.get(col, row) {
@@ -279,10 +255,7 @@ impl TicTacToe {
             active_player: Player::Player1,
             active_cell: (0, 0),
             state: TicTacToeState::Playing,
-            win_animation_state: WinAnimationState {
-                state: 0,
-                last_update_time: Duration::from_millis(0),
-            },
+            win_animation: Animation::new(WIN_ANIMATION_SPEED),
             current_time: Duration::from_millis(0),
         }
     }

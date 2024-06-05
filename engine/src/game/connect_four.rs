@@ -1,15 +1,15 @@
+use crate::animation::Animation;
 use crate::game::{Board, ButtonState, Cell, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::GRID_SIZE;
 use crate::RGB;
 use anyhow::Result;
 use core::time::Duration;
-use libm::{fabs, sin};
 use smallvec::SmallVec;
 
-use super::Player;
-
 const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+
+use super::Player;
 
 #[derive(Debug, PartialEq)]
 pub enum ConnectFourState {
@@ -17,21 +17,6 @@ pub enum ConnectFourState {
     Win(SmallVec<[(usize, usize); GRID_SIZE]>),
     Tie,
     Finished,
-}
-
-#[derive(Debug, PartialEq)]
-struct WinAnimationState {
-    state: usize,
-    last_update_time: Duration,
-}
-
-impl WinAnimationState {
-    fn new() -> Self {
-        Self {
-            state: 0,
-            last_update_time: Duration::from_millis(0),
-        }
-    }
 }
 
 pub type GameBoard = Board<Cell, 7, 6>;
@@ -42,7 +27,7 @@ pub struct ConnectFour {
     active_player: Player,
     active_col: usize,
     pub state: ConnectFourState,
-    win_animation_state: WinAnimationState,
+    win_animation: Animation,
     current_time: Duration,
 }
 
@@ -54,7 +39,7 @@ impl ConnectFour {
             active_player: Player::Player1,
             active_col: 0,
             state: ConnectFourState::Playing,
-            win_animation_state: WinAnimationState::new(), 
+            win_animation: Animation::new(WIN_ANIMATION_SPEED),
             current_time: Duration::from_millis(0),
         }
     }
@@ -240,21 +225,9 @@ impl Game for ConnectFour {
         self.current_time += delta_time;
 
         match &self.state {
-            ConnectFourState::Playing => {
-                self.win_animation_state.last_update_time = self.current_time;
-            }
+            ConnectFourState::Playing => {}
             ConnectFourState::Win(_) | ConnectFourState::Tie => {
-                if self.current_time - self.win_animation_state.last_update_time
-                    > WIN_ANIMATION_SPEED
-                {
-                    self.win_animation_state.last_update_time = self.current_time;
-
-                    if self.win_animation_state.state >= 20 {
-                        self.win_animation_state.state = 0;
-                    } else {
-                        self.win_animation_state.state += 1;
-                    }
-                }
+                self.win_animation.update(self.current_time);
             }
             ConnectFourState::Finished => {}
         }
@@ -306,10 +279,7 @@ impl Game for ConnectFour {
                     }
                 }
 
-                let s = self.win_animation_state.state;
-                let f: f64 = s as f64;
-                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                let color = self.win_animation.get_color();
                 for (col, row) in winning_line {
                     render_board.set(*col, *row, color);
                 }
@@ -317,10 +287,7 @@ impl Game for ConnectFour {
             ConnectFourState::Tie => {
                 for col in 0..self.board.cols() {
                     for row in 0..self.board.rows() {
-                        let s = self.win_animation_state.state;
-                        let f: f64 = s as f64;
-                        let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                        let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
+                        let color = self.win_animation.get_color();
                         render_board.set(col, row, color);
                     }
                 }

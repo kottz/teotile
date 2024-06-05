@@ -1,45 +1,11 @@
-// struct for the board
-
-// 2 need a way to generate walls and gap in between
-//
-// 3 need a way to stick gravity on the player
-// 4 need a way to make the player jump
-// 5 need a way to detect collision
-
-// data strcture for the game walls
-// need a y and a length for the gap
-// need a function to move every wall to the left
-//
-//
-// 6 we also need some way to convert from continous space to discrete space
-// and not make it seem like we are colliding on the ui even if we are not or vice versa
-
 use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
 
 use core::time::Duration;
-use libm::{fabs, sin};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use smallvec::SmallVec;
 const GRID_SIZE: usize = 12;
-const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 use crate::animation::Animation;
-
-//pub type FlappyBirdBoard = Board<RGB, 12, 12>;
-
-#[derive(Debug, PartialEq)]
-struct GameOverAnimationState {
-    state: usize,
-    last_update_time: Duration,
-}
-
-impl GameOverAnimationState {
-    fn new() -> Self {
-        Self {
-            state: 0,
-            last_update_time: Duration::from_millis(0),
-        }
-    }
-}
 
 struct Player {
     col: usize,
@@ -139,7 +105,7 @@ impl FlappyBird {
             last_wall_time: 0.0,
             smallrng: SmallRng::seed_from_u64(55098345123984287), // maybe see if you can get this from
             // system time or something
-            game_over_animation: Animation::new(Duration::from_millis(50)),
+            game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
         }
     }
 
@@ -296,7 +262,7 @@ impl Game for FlappyBird {
                         for row in
                             (0..first.gap_row).chain((first.gap_row + first.gap_size)..GRID_SIZE)
                         {
-                            render_board.set(0, row, RGB::new(color.0, color.1, color.2));
+                            render_board.set(0, row, color);
                         }
                     }
                     render_board.set(self.player.col, self.player.row(), RGB::new(189, 20, 20));

@@ -1,3 +1,4 @@
+use crate::game::RGB;
 use core::time::Duration;
 use libm::{fabs, sin};
 
@@ -31,10 +32,10 @@ impl Animation {
         true
     }
 
-    pub fn get_color(&self) -> (u8, u8, u8) {
+    pub fn get_color(&self) -> RGB {
         let f: f64 = self.state as f64;
         let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
         let color = (s as u8 * 10, s as u8 * 10, s as u8 * 10);
-        color
+        RGB::new(color.0, color.1, color.2)
     }
 }

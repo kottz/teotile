@@ -1,15 +1,15 @@
+use crate::animation::Animation;
 use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
+use crate::RenderBoard;
 use crate::RGB;
-use crate::{RenderBoard};
 use anyhow::Result;
 use core::time::Duration;
-use libm::{fabs, sin};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
 const UPDATE_INTERVAL: Duration = Duration::from_millis(150);
-const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum CellType {
@@ -23,21 +23,6 @@ enum SnakeState {
     Playing,
     GameOver,
     Finished,
-}
-
-#[derive(Debug, PartialEq)]
-struct GameOverAnimationState {
-    state: usize,
-    last_update_time: Duration,
-}
-
-impl GameOverAnimationState {
-    fn new() -> Self {
-        Self {
-            state: 0,
-            last_update_time: Duration::from_millis(0),
-        }
-    }
 }
 
 struct Coord {
@@ -111,7 +96,7 @@ pub struct SnakeGame {
     snake: Snake,
     food: Option<(usize, usize)>,
     current_time: Duration,
-    game_over_animation_state: GameOverAnimationState,
+    game_over_animation: Animation,
 }
 
 impl SnakeGame {
@@ -121,7 +106,7 @@ impl SnakeGame {
             snake: Snake::new(),
             food: None,
             current_time: Duration::from_millis(0),
-            game_over_animation_state: GameOverAnimationState::new(),
+            game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
         }
     }
 
@@ -225,17 +210,7 @@ impl Game for SnakeGame {
                 }
             }
             SnakeState::GameOver => {
-                if self.current_time - self.game_over_animation_state.last_update_time
-                    > WIN_ANIMATION_SPEED
-                {
-                    self.game_over_animation_state.last_update_time = self.current_time;
-
-                    if self.game_over_animation_state.state >= 20 {
-                        self.game_over_animation_state.state = 0;
-                    } else {
-                        self.game_over_animation_state.state += 1;
-                    }
-                }
+                self.game_over_animation.update(self.current_time);
             }
             SnakeState::Finished => {}
         }
@@ -255,11 +230,7 @@ impl Game for SnakeGame {
                 }
             }
             SnakeState::GameOver => {
-                let s = self.game_over_animation_state.state;
-                let f: f64 = s as f64;
-                let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-                let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
-
+                let color = self.game_over_animation.get_color();
                 for &(x, y) in self.snake.body.iter() {
                     render_board.set(x, y, color);
                 }

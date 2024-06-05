@@ -5,10 +5,9 @@ use anyhow::Result;
 use core::time::Duration;
 
 use crate::game::ConnectFour;
-use crate::game::TicTacToe;
 use crate::game::FlappyBird;
 use crate::game::SnakeGame;
-
+use crate::game::TicTacToe;
 
 use crate::GRID_SIZE;
 const NUM_GAMES: usize = 4;
@@ -29,7 +28,6 @@ pub struct Menu {
 //     FlappyBird(FlappyBird),
 //     Snake(SnakeGame),
 // }
-
 
 macro_rules! define_game_type_and_impl {
     ($($variant:ident($game:ty)),+ $(,)?) => {
