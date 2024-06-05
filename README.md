@@ -4,6 +4,7 @@ Teotile is a simple application used to run simple pixel games on a 12x12 LED pi
 
 ## Games
 
-- **Connect Four**: The objective is to line up four of your own discs horizontally, vertically, or diagonally before your opponent does.
-
-- **Snake**: Soon...
+- **Connect Four** 
+- **Tic-Tac-Toe**
+- **Flappy Bird**
+- **Snake**

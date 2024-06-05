@@ -9,6 +9,7 @@ use crate::game::TicTacToe;
 use crate::game::FlappyBird;
 use crate::game::SnakeGame;
 
+
 use crate::GRID_SIZE;
 const NUM_GAMES: usize = 4;
 
@@ -22,41 +23,77 @@ pub struct Menu {
     state: MenuState,
 }
 
-enum GameType {
+// enum GameType {
+//     ConnectFour(ConnectFour),
+//     TicTacToe(TicTacToe),
+//     FlappyBird(FlappyBird),
+//     Snake(SnakeGame),
+// }
+
+
+macro_rules! define_game_type_and_impl {
+    ($($variant:ident($game:ty)),+ $(,)?) => {
+        enum GameType {
+            $($variant($game)),+
+        }
+
+        impl Game for GameType {
+            fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+                match self {
+                    $(GameType::$variant(game) => game.process_input(input_command)),+
+                }
+            }
+
+            fn update(&mut self, delta_time: Duration) -> Result<()> {
+                match self {
+                    $(GameType::$variant(game) => game.update(delta_time)),+
+                }
+            }
+
+            fn render(&self) -> Result<RenderBoard> {
+                match self {
+                    $(GameType::$variant(game) => game.render()),+
+                }
+            }
+        }
+    };
+}
+
+define_game_type_and_impl!(
     ConnectFour(ConnectFour),
     TicTacToe(TicTacToe),
     FlappyBird(FlappyBird),
     Snake(SnakeGame),
-}
+);
 
-impl Game for GameType {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
-        match self {
-            GameType::ConnectFour(game) => game.process_input(input_command),
-            GameType::TicTacToe(game) => game.process_input(input_command),
-            GameType::FlappyBird(game) => game.process_input(input_command),
-            GameType::Snake(game) => game.process_input(input_command),
-        }
-    }
-
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
-        match self {
-            GameType::ConnectFour(game) => game.update(delta_time),
-            GameType::TicTacToe(game) => game.update(delta_time),
-            GameType::FlappyBird(game) => game.update(delta_time),
-            GameType::Snake(game) => game.update(delta_time),
-        }
-    }
-
-    fn render(&self) -> Result<RenderBoard> {
-        match self {
-            GameType::ConnectFour(game) => game.render(),
-            GameType::TicTacToe(game) => game.render(),
-            GameType::FlappyBird(game) => game.render(),
-            GameType::Snake(game) => game.render(),
-        }
-    }
-}
+// impl Game for GameType {
+//     fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+//         match self {
+//             GameType::ConnectFour(game) => game.process_input(input_command),
+//             GameType::TicTacToe(game) => game.process_input(input_command),
+//             GameType::FlappyBird(game) => game.process_input(input_command),
+//             GameType::Snake(game) => game.process_input(input_command),
+//         }
+//     }
+//
+//     fn update(&mut self, delta_time: Duration) -> Result<()> {
+//         match self {
+//             GameType::ConnectFour(game) => game.update(delta_time),
+//             GameType::TicTacToe(game) => game.update(delta_time),
+//             GameType::FlappyBird(game) => game.update(delta_time),
+//             GameType::Snake(game) => game.update(delta_time),
+//         }
+//     }
+//
+//     fn render(&self) -> Result<RenderBoard> {
+//         match self {
+//             GameType::ConnectFour(game) => game.render(),
+//             GameType::TicTacToe(game) => game.render(),
+//             GameType::FlappyBird(game) => game.render(),
+//             GameType::Snake(game) => game.render(),
+//         }
+//     }
+// }
 
 impl Menu {
     pub fn new() -> Self {

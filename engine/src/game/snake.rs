@@ -51,6 +51,7 @@ struct Snake {
     target_direction: (i32, i32),
     last_update_time: Duration,
     rng: SmallRng,
+    move_queued: bool,
 }
 
 impl Snake {
@@ -64,6 +65,7 @@ impl Snake {
             target_direction: (1, 0),
             last_update_time: Duration::from_millis(0),
             rng: SmallRng::seed_from_u64(42),
+            move_queued: false,
         }
     }
 
@@ -100,6 +102,7 @@ impl Snake {
 
         self.body.insert(0, (new_x as usize, new_y as usize));
         self.body.pop();
+        self.move_queued = false;
     }
 }
 
@@ -152,23 +155,27 @@ impl Game for SnakeGame {
                 if let ButtonState::Pressed = input_command.button_state {
                     match input_command.command_type {
                         CommandType::Up => {
-                            if self.snake.direction != (0, -1) {
-                                self.snake.target_direction = (0, 1);
+                            if self.snake.direction != (0, -1) && !self.snake.move_queued {
+                                self.snake.move_queued = true;
+                                self.snake.direction = (0, 1);
                             }
                         }
                         CommandType::Down => {
-                            if self.snake.direction != (0, 1) {
-                                self.snake.target_direction = (0, -1);
+                            if self.snake.direction != (0, 1) && !self.snake.move_queued {
+                                self.snake.move_queued = true;
+                                self.snake.direction = (0, -1);
                             }
                         }
                         CommandType::Left => {
-                            if self.snake.direction != (1, 0) {
-                                self.snake.target_direction = (-1, 0);
+                            if self.snake.direction != (1, 0) && !self.snake.move_queued {
+                                self.snake.move_queued = true;
+                                self.snake.direction = (-1, 0);
                             }
                         }
                         CommandType::Right => {
-                            if self.snake.direction != (-1, 0) {
-                                self.snake.target_direction = (1, 0);
+                            if self.snake.direction != (-1, 0) && !self.snake.move_queued {
+                                self.snake.move_queued = true;
+                                self.snake.direction = (1, 0);
                             }
                         }
                         _ => {}
@@ -198,7 +205,7 @@ impl Game for SnakeGame {
             SnakeState::Playing => {
                 if self.current_time - self.snake.last_update_time > UPDATE_INTERVAL {
                     self.snake.last_update_time = self.current_time;
-                    self.snake.direction = self.snake.target_direction;
+                    //self.snake.direction = self.snake.target_direction;
                     self.snake.move_snake();
 
                     if let Some(food) = self.food {
