@@ -21,8 +21,8 @@ pub enum TicTacToeState {
 type TicTacToeBoard = Board<Cell, 3, 3>;
 
 impl TicTacToeBoard {
-    fn check_tie(&self) -> bool {
-        self.cells.iter().flatten().all(|&cell| cell != Cell::Empty) //&& self.check_win().is_none()
+    fn full(&self) -> bool {
+        self.cells.iter().flatten().all(|&cell| cell != Cell::Empty)
     }
 }
 
@@ -82,7 +82,7 @@ impl Game for TicTacToe {
                                     };
                                 }
                             }
-                            if self.board.check_tie() {
+                            if self.check_tie(self.active_cell) {
                                 self.state = TicTacToeState::Tie;
                             }
                         }
@@ -314,6 +314,13 @@ impl TicTacToe {
 
         None
     }
+
+    pub fn check_tie(&self, last_move: (usize, usize)) -> bool {
+        if self.check_win(last_move).is_none() {
+            return self.board.full();
+        }
+        false
+    }
 }
 
 #[cfg(test)]
@@ -425,36 +432,58 @@ mod tests {
 
         // Simulate a tied state
         game._make_move((0, 0), Player::Player1).unwrap();
+        game._make_move((1, 0), Player::Player2).unwrap();
+        game._make_move((2, 0), Player::Player1).unwrap();
         game._make_move((0, 1), Player::Player2).unwrap();
         game._make_move((0, 2), Player::Player1).unwrap();
-        game._make_move((1, 0), Player::Player2).unwrap();
+        game._make_move((1, 1), Player::Player2).unwrap();
+        game._make_move((1, 2), Player::Player1).unwrap();
+        game._make_move((2, 2), Player::Player2).unwrap();
+        game._make_move((2, 1), Player::Player1).unwrap();
+
+        // Ensure the game state is set to tie
+        assert!(game.check_tie((2, 2)));
+    }
+
+    #[test]
+    fn test_tie_state_win() {
+        let mut game = TicTacToe::new();
+
+        // Simulate a tied state
+        game._make_move((0, 0), Player::Player1).unwrap();
+        game._make_move((0, 1), Player::Player2).unwrap();
         game._make_move((1, 1), Player::Player1).unwrap();
-        game._make_move((1, 2), Player::Player2).unwrap();
+        game._make_move((0, 2), Player::Player2).unwrap();
         game._make_move((2, 0), Player::Player1).unwrap();
+        game._make_move((1, 0), Player::Player2).unwrap();
+        game._make_move((1, 2), Player::Player1).unwrap();
         game._make_move((2, 1), Player::Player2).unwrap();
         game._make_move((2, 2), Player::Player1).unwrap();
 
-        // Ensure the game state is set to tie
-        assert!(game.board.check_tie());
-    }
+        assert_eq!(
+            game.check_win((0, 0)),
+            Some(smallvec![(0, 0), (1, 1), (2, 2)])
+        );
 
+        // this should be a win for Player 1
+        assert_ne!(true, game.check_tie((2, 2)));
+    }
     #[test]
     fn test_reset_after_tie() {
         let mut game = TicTacToe::new();
 
-        // Simulate a tie state
         game._make_move((0, 0), Player::Player1).unwrap();
+        game._make_move((1, 0), Player::Player2).unwrap();
+        game._make_move((2, 0), Player::Player1).unwrap();
         game._make_move((0, 1), Player::Player2).unwrap();
         game._make_move((0, 2), Player::Player1).unwrap();
-        game._make_move((1, 0), Player::Player2).unwrap();
-        game._make_move((1, 1), Player::Player1).unwrap();
-        game._make_move((1, 2), Player::Player2).unwrap();
-        game._make_move((2, 0), Player::Player1).unwrap();
-        game._make_move((2, 1), Player::Player2).unwrap();
-        game._make_move((2, 2), Player::Player1).unwrap();
+        game._make_move((1, 1), Player::Player2).unwrap();
+        game._make_move((1, 2), Player::Player1).unwrap();
+        game._make_move((2, 2), Player::Player2).unwrap();
+        game._make_move((2, 1), Player::Player1).unwrap();
 
         // Ensure the game is a tie
-        assert!(game.board.check_tie());
+        assert!(game.check_tie((2, 2)));
 
         // Manually set the game state to tie
         game.state = TicTacToeState::Tie;
