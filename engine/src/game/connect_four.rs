@@ -1,5 +1,5 @@
 use crate::animation::Animation;
-use crate::game::{Board, ButtonState, Cell, CommandType, Game, GameCommand};
+use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::GRID_SIZE;
 use crate::RGB;
@@ -17,6 +17,14 @@ pub enum ConnectFourState {
     Win(SmallVec<[(usize, usize); GRID_SIZE]>),
     Tie,
     Finished,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub enum Cell {
+    #[default]
+    Empty,
+    PlayerX,
+    PlayerO,
 }
 
 pub type GameBoard = Board<Cell, 7, 6>;

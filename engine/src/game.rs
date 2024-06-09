@@ -36,14 +36,6 @@ pub trait Game {
     fn render(&self) -> Result<RenderBoard>;
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub enum Cell {
-    #[default]
-    Empty,
-    PlayerX,
-    PlayerO,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ButtonState {
     Pressed,

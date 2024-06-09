@@ -1,5 +1,5 @@
 use crate::animation::Animation;
-use crate::game::{Board, ButtonState, Cell, CommandType, Game, GameCommand};
+use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::RGB;
 use anyhow::Result;
@@ -16,6 +16,14 @@ pub enum TicTacToeState {
     Win(SmallVec<[(usize, usize); 3]>),
     Tie,
     Finished,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub enum Cell {
+    #[default]
+    Empty,
+    PlayerX,
+    PlayerO,
 }
 
 type TicTacToeBoard = Board<Cell, 3, 3>;
