@@ -1,5 +1,5 @@
 use crate::animation::Animation;
-use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
+use crate::game::{ButtonState, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::RGB;
 use anyhow::Result;
@@ -11,29 +11,15 @@ const GRID_SIZE: usize = 12;
 const UPDATE_INTERVAL: Duration = Duration::from_millis(150);
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-enum CellType {
-    Empty,
-    Snake,
-    Food,
-}
-
 #[derive(Debug, PartialEq)]
 enum SnakeState {
     Playing,
     GameOver,
-    Finished,
-}
-
-struct Coord {
-    x: usize,
-    y: usize,
 }
 
 struct Snake {
     body: SmallVec<[(usize, usize); GRID_SIZE]>,
     direction: (i32, i32),
-    target_direction: (i32, i32),
     last_update_time: Duration,
     rng: SmallRng,
     move_queued: bool,
@@ -47,7 +33,6 @@ impl Snake {
         Self {
             body,
             direction: (1, 0),
-            target_direction: (1, 0),
             last_update_time: Duration::from_millis(0),
             rng: SmallRng::seed_from_u64(42),
             move_queued: false,
@@ -60,11 +45,10 @@ impl Snake {
 
     fn move_snake(&mut self) {
         let (dx, dy) = self.direction;
-        //let (mut x, mut y) = self.head();
         let (x, y) = self.head();
 
-        let mut new_x = (x as i32 + dx); //% GRID_SIZE as i32; //as usize;
-        let mut new_y = (y as i32 + dy); //% GRID_SIZE as i32; //as usize;
+        let mut new_x = x as i32 + dx;
+        let mut new_y = y as i32 + dy;
 
         if new_x < 0 {
             new_x = GRID_SIZE as i32 - 1;
@@ -78,12 +62,6 @@ impl Snake {
         if new_y >= GRID_SIZE as i32 {
             new_y = 0;
         }
-
-        //x = x.wrapping_sub(GRID_SIZE) % GRID_SIZE;
-        //x = x % 12;
-        //y = y % 12;
-
-        //y = y.wrapping_sub(GRID_SIZE) % GRID_SIZE;
 
         self.body.insert(0, (new_x as usize, new_y as usize));
         self.body.pop();
@@ -124,7 +102,6 @@ impl SnakeGame {
 
     fn check_collision(&self) -> bool {
         let head = self.snake.head();
-        //self.snake.body[1..].contains(&head)
         if let Some(body) = self.snake.body.get(2..) {
             let c = body.contains(&head);
             return c;
@@ -179,7 +156,6 @@ impl Game for SnakeGame {
                     }
                 }
             }
-            SnakeState::Finished => {}
         }
         Ok(())
     }
@@ -190,7 +166,6 @@ impl Game for SnakeGame {
             SnakeState::Playing => {
                 if self.current_time - self.snake.last_update_time > UPDATE_INTERVAL {
                     self.snake.last_update_time = self.current_time;
-                    //self.snake.direction = self.snake.target_direction;
                     self.snake.move_snake();
 
                     if let Some(food) = self.food {
@@ -212,7 +187,6 @@ impl Game for SnakeGame {
             SnakeState::GameOver => {
                 self.game_over_animation.update(self.current_time);
             }
-            SnakeState::Finished => {}
         }
         Ok(())
     }
@@ -235,9 +209,7 @@ impl Game for SnakeGame {
                     render_board.set(x, y, color);
                 }
             }
-            SnakeState::Finished => {}
         }
-
         Ok(render_board)
     }
 }
