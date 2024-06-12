@@ -9,6 +9,8 @@ use crate::game::FlappyBird;
 use crate::game::SnakeGame;
 use crate::game::TicTacToe;
 
+use crate::images;
+
 use crate::GRID_SIZE;
 const NUM_GAMES: usize = 4;
 
@@ -57,6 +59,57 @@ define_game_type_and_impl!(
     Snake(SnakeGame),
 );
 
+type PixelArtImage = [[RGB; 8]; 8];
+
+impl GameType {
+    fn pixel_art(&self) -> PixelArtImage {
+        let image = match self {
+            GameType::ConnectFour(_) => images::CONNECT_FOUR,
+            GameType::TicTacToe(_) => images::TICTACTOE,
+            GameType::FlappyBird(_) => images::FLAPPY_BIRD,
+            GameType::Snake(_) => images::SNAKE,
+        };
+        let mut pixel_art = [[RGB::default(); 8]; 8];
+
+        // Rotate image 90 degrees clockwise
+        // to workaround build.rs limitation
+        for i in 0..8 {
+            for j in (0..8).rev() {
+                let index = i * 8 + j;
+                pixel_art[j][7 - i] = RGB {
+                    r: image[index][0],
+                    g: image[index][1],
+                    b: image[index][2],
+                };
+            }
+        }
+        return pixel_art;
+    }
+}
+
+// impl PixelArt {
+//     fn pixel_art(game_type: GameType) -> PixelArtImage {
+//         let image = match game_type {
+//             GameType::ConnectFour(_) => images::CONNECT_FOUR,
+//             GameType::TicTacToe(_) => images::TICTACTOE,
+//             GameType::FlappyBird(_) => images::SNAKE,
+//             GameType::Snake(_) => images::SNAKE,
+//         };
+//         let mut pixel_art = [[RGB::default(); 8]; 8];
+//         for i in 0..8 {
+//             for j in 0..8 {
+//                 let index = i * 8 + j;
+//                 pixel_art[i][j] = RGB {
+//                     r: image[index][0],
+//                     g: image[index][1],
+//                     b: image[index][2],
+//                 };
+//             }
+//         }
+//         return pixel_art;
+//     }
+// }
+
 impl Menu {
     pub fn new() -> Self {
         Self {
@@ -81,15 +134,31 @@ impl Menu {
         }
     }
 
-    fn select_game(&mut self) {
-        let game_state = match self.active_game_index {
+    fn get_game_from_index(&self) -> GameType {
+        match self.active_game_index {
             0 => GameType::ConnectFour(ConnectFour::new()),
             1 => GameType::TicTacToe(TicTacToe::new()),
             2 => GameType::FlappyBird(FlappyBird::new()),
             3 => GameType::Snake(SnakeGame::new()),
             _ => unreachable!(),
-        };
-        self.state = MenuState::RunningGame(game_state);
+        }
+    }
+
+    fn pixel_art(&self) -> PixelArtImage {
+        self.get_game_from_index().pixel_art()
+    }
+
+    fn start_game(&mut self) {
+        let game = self.get_game_from_index();
+        self.state = MenuState::RunningGame(game);
+        // let game_state = match self.active_game_index {
+        //     0 => GameType::ConnectFour(ConnectFour::new()),
+        //     1 => GameType::TicTacToe(TicTacToe::new()),
+        //     2 => GameType::FlappyBird(FlappyBird::new()),
+        //     3 => GameType::Snake(SnakeGame::new()),
+        //     _ => unreachable!(),
+        // };
+        // self.state = MenuState::RunningGame(game_state);
     }
 }
 
@@ -112,7 +181,7 @@ impl Game for Menu {
                             self.cycle_right();
                         }
                         CommandType::Select => {
-                            self.select_game();
+                            self.start_game();
                         }
                         _ => {}
                     }
@@ -151,6 +220,12 @@ impl Game for Menu {
                     // TODO: add pixel art images for each game
                     // to make it possible to discern
                     render_board.set(i % GRID_SIZE, i / GRID_SIZE, rgb);
+                }
+                let pixel_art = self.pixel_art();
+                for i in 0..8 {
+                    for j in 0..8 {
+                        render_board.set(i + 2, j + 2, pixel_art[i][j]);
+                    }
                 }
             }
             MenuState::RunningGame(game_state) => {
