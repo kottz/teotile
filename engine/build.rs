@@ -8,10 +8,10 @@ use std::path::Path;
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let image_dir = "static/pixel-art";
-    let output_file_path = Path::new(&out_dir).join("images.rs");
+    let output_file_path = Path::new(&out_dir).join("pixel_art.rs");
     let mut output_file = File::create(output_file_path).unwrap();
 
-    writeln!(&mut output_file, "pub mod images {{").unwrap();
+    writeln!(&mut output_file, "pub mod pixel_art {{").unwrap();
 
     for entry in fs::read_dir(image_dir).unwrap() {
         let entry = entry.unwrap();

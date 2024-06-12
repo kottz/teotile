@@ -9,7 +9,7 @@ use crate::game::FlappyBird;
 use crate::game::SnakeGame;
 use crate::game::TicTacToe;
 
-use crate::images;
+use crate::pixel_art;
 
 use crate::GRID_SIZE;
 const NUM_GAMES: usize = 4;
@@ -64,10 +64,10 @@ type PixelArtImage = [[RGB; 8]; 8];
 impl GameType {
     fn pixel_art(&self) -> PixelArtImage {
         let image = match self {
-            GameType::ConnectFour(_) => images::CONNECT_FOUR,
-            GameType::TicTacToe(_) => images::TICTACTOE,
-            GameType::FlappyBird(_) => images::FLAPPY_BIRD,
-            GameType::Snake(_) => images::SNAKE,
+            GameType::ConnectFour(_) => pixel_art::CONNECT_FOUR,
+            GameType::TicTacToe(_) => pixel_art::TICTACTOE,
+            GameType::FlappyBird(_) => pixel_art::FLAPPY_BIRD,
+            GameType::Snake(_) => pixel_art::SNAKE,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
