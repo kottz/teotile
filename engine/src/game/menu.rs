@@ -273,17 +273,17 @@ mod tests {
     }
 
     #[test]
-    fn test_select_game() {
+    fn test_start_game() {
         let mut menu = Menu::new();
         menu.active_game_index = 0;
-        menu.select_game();
+        menu.start_game();
         assert!(matches!(
             menu.state,
             MenuState::RunningGame(GameType::ConnectFour(_))
         ));
 
         menu.active_game_index = 1;
-        menu.select_game();
+        menu.start_game();
         assert!(matches!(
             menu.state,
             MenuState::RunningGame(GameType::TicTacToe(_))
@@ -322,7 +322,7 @@ mod tests {
     #[test]
     fn test_process_input_running_game() {
         let mut menu = Menu::new();
-        menu.select_game();
+        menu.start_game();
 
         let quit_command = GameCommand {
             command_type: CommandType::Quit,
