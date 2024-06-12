@@ -1,5 +1,5 @@
 #![no_std]
-
+include!(concat!(env!("OUT_DIR"), "/images.rs"));
 mod animation;
 mod game;
 pub use game::RenderBoard;
