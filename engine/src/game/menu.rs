@@ -87,29 +87,6 @@ impl GameType {
     }
 }
 
-// impl PixelArt {
-//     fn pixel_art(game_type: GameType) -> PixelArtImage {
-//         let image = match game_type {
-//             GameType::ConnectFour(_) => images::CONNECT_FOUR,
-//             GameType::TicTacToe(_) => images::TICTACTOE,
-//             GameType::FlappyBird(_) => images::SNAKE,
-//             GameType::Snake(_) => images::SNAKE,
-//         };
-//         let mut pixel_art = [[RGB::default(); 8]; 8];
-//         for i in 0..8 {
-//             for j in 0..8 {
-//                 let index = i * 8 + j;
-//                 pixel_art[i][j] = RGB {
-//                     r: image[index][0],
-//                     g: image[index][1],
-//                     b: image[index][2],
-//                 };
-//             }
-//         }
-//         return pixel_art;
-//     }
-// }
-
 impl Menu {
     pub fn new() -> Self {
         Self {
@@ -151,14 +128,6 @@ impl Menu {
     fn start_game(&mut self) {
         let game = self.get_game_from_index();
         self.state = MenuState::RunningGame(game);
-        // let game_state = match self.active_game_index {
-        //     0 => GameType::ConnectFour(ConnectFour::new()),
-        //     1 => GameType::TicTacToe(TicTacToe::new()),
-        //     2 => GameType::FlappyBird(FlappyBird::new()),
-        //     3 => GameType::Snake(SnakeGame::new()),
-        //     _ => unreachable!(),
-        // };
-        // self.state = MenuState::RunningGame(game_state);
     }
 }
 
@@ -210,21 +179,20 @@ impl Game for Menu {
         let mut render_board = RenderBoard::new();
         match &self.state {
             MenuState::Selecting => {
-                //Render main menu
+                //render menu items
                 for i in 0..NUM_GAMES {
                     let rgb = if i == self.active_game_index {
                         RGB::new(255, 255, 255)
                     } else {
                         RGB::new(100, 100, 100)
                     };
-                    // TODO: add pixel art images for each game
-                    // to make it possible to discern
                     render_board.set(i % GRID_SIZE, i / GRID_SIZE, rgb);
                 }
-                let pixel_art = self.pixel_art();
-                for i in 0..8 {
-                    for j in 0..8 {
-                        render_board.set(i + 2, j + 2, pixel_art[i][j]);
+
+                //render pixel art
+                for (i, row) in self.pixel_art().iter().enumerate() {
+                    for (j, &pixel) in row.iter().enumerate() {
+                        render_board.set(i + 2, j + 2, pixel);
                     }
                 }
             }
@@ -348,6 +316,4 @@ mod tests {
             assert_eq!(render_board.get(i % GRID_SIZE, i / GRID_SIZE), expected_rgb);
         }
     }
-
-    // Add more tests for other scenarios as needed
 }
