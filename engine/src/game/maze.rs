@@ -99,11 +99,9 @@ impl MazeBoard {
                     && ny < GRID_SIZE as isize
                     && self.tiles[ny as usize][nx as usize] == MazeTile::Wall
                 {
-                    //println!("nx: {}, ny: {}", nx, ny);
                     self.tiles[ny as usize][nx as usize] = MazeTile::Empty;
                     self.tiles[(y + dy / 2) as usize][(x + dx / 2) as usize] = MazeTile::Empty;
-                    //stack.push((nx, ny));
-                    stack.insert(stack.len(), (nx, ny));
+                    stack.push((nx, ny));
                     moved = true;
                     break;
                 }
