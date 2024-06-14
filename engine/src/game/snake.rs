@@ -26,7 +26,7 @@ struct Snake {
 }
 
 impl Snake {
-    fn new() -> Self {
+    fn new(seed: u64) -> Self {
         let mut body = SmallVec::<[(usize, usize); GRID_SIZE]>::new();
         body.push((GRID_SIZE / 2, GRID_SIZE / 2));
 
@@ -34,7 +34,7 @@ impl Snake {
             body,
             direction: (1, 0),
             last_update_time: Duration::from_millis(0),
-            rng: SmallRng::seed_from_u64(42),
+            rng: SmallRng::seed_from_u64(seed),
             move_queued: false,
         }
     }
@@ -75,16 +75,18 @@ pub struct SnakeGame {
     food: Option<(usize, usize)>,
     current_time: Duration,
     game_over_animation: Animation,
+    seed: u64,
 }
 
 impl SnakeGame {
-    pub fn new() -> Self {
+    pub fn new(seed: u64) -> Self {
         Self {
             state: SnakeState::Playing,
-            snake: Snake::new(),
+            snake: Snake::new(seed),
             food: None,
             current_time: Duration::from_millis(0),
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
+            seed
         }
     }
 
@@ -149,7 +151,7 @@ impl Game for SnakeGame {
                     match input_command.command_type {
                         CommandType::Select => {
                             self.state = SnakeState::Playing;
-                            self.snake = Snake::new();
+                            self.snake = Snake::new(self.seed+1);
                             self.food = None;
                         }
                         _ => return Ok(()),

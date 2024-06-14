@@ -94,7 +94,7 @@ enum FlappyBirdState {
 }
 
 impl FlappyBird {
-    pub fn new() -> Self {
+    pub fn new(seed: u64) -> Self {
         Self {
             state: FlappyBirdState::Playing,
             player: Player::new(),
@@ -103,7 +103,7 @@ impl FlappyBird {
             wall_gap: 8,
             wall_period: 0.18,
             last_wall_time: 0.0,
-            smallrng: SmallRng::seed_from_u64(55098345123984287), // maybe see if you can get this from
+            smallrng: SmallRng::seed_from_u64(seed), // maybe see if you can get this from
             // system time or something
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
         }

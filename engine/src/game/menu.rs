@@ -22,6 +22,7 @@ enum MenuState {
 pub struct Menu {
     active_game_index: usize,
     state: MenuState,
+    current_time: Duration,
 }
 
 macro_rules! define_game_type_and_impl {
@@ -92,6 +93,7 @@ impl Menu {
         Self {
             active_game_index: 0,
             state: MenuState::Selecting,
+            current_time: Duration::from_millis(0),
         }
     }
 
@@ -112,11 +114,12 @@ impl Menu {
     }
 
     fn get_game_from_index(&self) -> GameType {
+        let seed = self.current_time.as_millis() as u64;
         match self.active_game_index {
             0 => GameType::ConnectFour(ConnectFour::new()),
             1 => GameType::TicTacToe(TicTacToe::new()),
-            2 => GameType::FlappyBird(FlappyBird::new()),
-            3 => GameType::Snake(SnakeGame::new()),
+            2 => GameType::FlappyBird(FlappyBird::new(seed)),
+            3 => GameType::Snake(SnakeGame::new(seed)),
             _ => unreachable!(),
         }
     }
@@ -169,8 +172,13 @@ impl Game for Menu {
     }
 
     fn update(&mut self, delta_time: Duration) -> Result<()> {
-        if let MenuState::RunningGame(game_state) = &mut self.state {
-            let _ = game_state.update(delta_time);
+        match &mut self.state {
+            MenuState::Selecting => {
+                self.current_time += delta_time;
+            }
+            MenuState::RunningGame(game_state) => {
+                game_state.update(delta_time)?;
+            }
         }
         Ok(())
     }
