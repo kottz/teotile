@@ -37,47 +37,10 @@ impl MazeBoard {
         board.generate_maze();
         board
     }
-    // fn generate_maze(&mut self) {
-    //     // ...
-    //     // added for debugging
-    //     self.tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
-    //     let mut rng = SmallRng::seed_from_u64(self.seed);
-    //     let start_pos = (1, 1);
-    //     self.tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
-    //
-    //     let mut stack = SmallVec::<[(isize, isize); 128]>::new();
-    //     for (dx, dy) in &directions {
-    //         let nx = start_pos.0 + dx;
-    //         let ny = start_pos.1 + dy;
-    //         if 0 < nx && nx < GRID_SIZE as isize && 0 < ny && ny < GRID_SIZE as isize {
-    //             stack.push((nx, ny));
-    //         }
-    //     }
-    //
-    //     while !stack.is_empty() {
-    //         let (x, y) = stack.pop().unwrap();
-    //         if self.tiles[y as usize][x as usize] == MazeTile::Wall {
-    //             self.tiles[y as usize][x as usize] = MazeTile::Empty;
-    //
-    //             let (px, py) = ((x + start_pos.0) / 2, (y + start_pos.1) / 2);
-    //             self.tiles[py as usize][px as usize] = MazeTile::Empty;
-    //
-    //             directions.shuffle(&mut rng);
-    //             for (dx, dy) in &directions {
-    //                 let nx = x + dx;
-    //                 let ny = y + dy;
-    //                 if 0 < nx && nx < GRID_SIZE as isize && 0 < ny && ny < GRID_SIZE as isize {
-    //                     stack.push((nx, ny));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+
     fn generate_maze(&mut self) {
-        // added for debugging
-        self.tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
         let mut rng = SmallRng::seed_from_u64(self.seed);
-        let start_pos  = (1, 1);
+        let start_pos = (1, 1);
         self.tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
         let mut directions: [(isize, isize); 4] = [(-2, 0), (2, 0), (0, -2), (0, 2)];
         let mut stack = SmallVec::<[(isize, isize); 128]>::new();
@@ -111,13 +74,45 @@ impl MazeBoard {
             }
         }
     }
+
+    fn find_furthest_tile(&self, start_pos: (usize, usize)) -> (usize, usize) {
+        let mut stack = SmallVec::<[(usize, usize, usize); 128]>::new();
+        let mut visited = [[false; GRID_SIZE]; GRID_SIZE];
+        let mut max_distance = 0;
+        let mut furthest_tile = start_pos;
+
+        stack.push((start_pos.0, start_pos.1, 0));
+        visited[start_pos.0][start_pos.1] = true;
+
+        while let Some((x, y, distance)) = stack.pop() {
+            if distance > max_distance {
+                max_distance = distance;
+                furthest_tile = (x, y);
+            }
+
+            for (dx, dy) in &[(0, 1), (0, -1), (1, 0), (-1, 0)] {
+                let nx = (x as isize + dx) as usize;
+                let ny = (y as isize + dy) as usize;
+
+                if nx < GRID_SIZE
+                    && ny < GRID_SIZE
+                    && self.tiles[nx][ny] == MazeTile::Empty
+                    && !visited[nx][ny]
+                {
+                    stack.push((nx, ny, distance + 1));
+                    visited[nx][ny] = true;
+                }
+            }
+        }
+        furthest_tile
+    }
 }
 
 impl MazeGame {
     pub fn new(seed: u64) -> Self {
         let board = MazeBoard::new(seed);
         let player_pos = (1, 1);
-        let exit_pos = (GRID_SIZE - 2, GRID_SIZE - 2);
+        let exit_pos = board.find_furthest_tile(player_pos);
         Self {
             board,
             state: MazeGameState::Playing,
