@@ -6,9 +6,9 @@ use core::time::Duration;
 
 use crate::game::ConnectFour;
 use crate::game::FlappyBird;
+use crate::game::MazeGame;
 use crate::game::SnakeGame;
 use crate::game::TicTacToe;
-use crate::game::MazeGame;
 
 use crate::pixel_art;
 
@@ -28,6 +28,9 @@ pub struct Menu {
 
 macro_rules! define_game_type_and_impl {
     ($($variant:ident($game:ty)),+ $(,)?) => {
+        enum GameTypeInfo {
+            $($variant),+
+        }
         enum GameType {
             $($variant($game)),+
         }
@@ -64,14 +67,14 @@ define_game_type_and_impl!(
 
 type PixelArtImage = [[RGB; 8]; 8];
 
-impl GameType {
+impl GameTypeInfo {
     fn pixel_art(&self) -> PixelArtImage {
         let image = match self {
-            GameType::ConnectFour(_) => pixel_art::CONNECT_FOUR,
-            GameType::TicTacToe(_) => pixel_art::TICTACTOE,
-            GameType::FlappyBird(_) => pixel_art::FLAPPY_BIRD,
-            GameType::Snake(_) => pixel_art::SNAKE,
-            GameType::Maze(_) => pixel_art::MAZE,
+            GameTypeInfo::ConnectFour => pixel_art::CONNECT_FOUR,
+            GameTypeInfo::TicTacToe => pixel_art::TICTACTOE,
+            GameTypeInfo::FlappyBird => pixel_art::FLAPPY_BIRD,
+            GameTypeInfo::Snake => pixel_art::SNAKE,
+            GameTypeInfo::Maze => pixel_art::MAZE,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -116,24 +119,31 @@ impl Menu {
         }
     }
 
-    fn get_game_from_index(&self) -> GameType {
-        let seed = self.current_time.as_millis() as u64;
+    fn get_game_type_from_index(&self) -> GameTypeInfo {
         match self.active_game_index {
-            0 => GameType::ConnectFour(ConnectFour::new()),
-            1 => GameType::TicTacToe(TicTacToe::new()),
-            2 => GameType::FlappyBird(FlappyBird::new(seed)),
-            3 => GameType::Snake(SnakeGame::new(seed)),
-            4 => GameType::Maze(MazeGame::new(seed)),
+            0 => GameTypeInfo::ConnectFour,
+            1 => GameTypeInfo::TicTacToe,
+            2 => GameTypeInfo::FlappyBird,
+            3 => GameTypeInfo::Snake,
+            4 => GameTypeInfo::Maze,
             _ => unreachable!(),
         }
     }
 
     fn pixel_art(&self) -> PixelArtImage {
-        self.get_game_from_index().pixel_art()
+        self.get_game_type_from_index().pixel_art()
     }
 
     fn start_game(&mut self) {
-        let game = self.get_game_from_index();
+        let game_type = self.get_game_type_from_index();
+        let seed = self.current_time.as_millis() as u64;
+        let game = match game_type {
+            GameTypeInfo::ConnectFour => GameType::ConnectFour(ConnectFour::new()),
+            GameTypeInfo::TicTacToe => GameType::TicTacToe(TicTacToe::new()),
+            GameTypeInfo::FlappyBird => GameType::FlappyBird(FlappyBird::new(seed)),
+            GameTypeInfo::Snake => GameType::Snake(SnakeGame::new(seed)),
+            GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed)),
+        };
         self.state = MenuState::RunningGame(game);
     }
 }
