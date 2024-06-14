@@ -8,11 +8,12 @@ use crate::game::ConnectFour;
 use crate::game::FlappyBird;
 use crate::game::SnakeGame;
 use crate::game::TicTacToe;
+use crate::game::MazeGame;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
-const NUM_GAMES: usize = 4;
+const NUM_GAMES: usize = 5;
 
 enum MenuState {
     Selecting,
@@ -58,6 +59,7 @@ define_game_type_and_impl!(
     TicTacToe(TicTacToe),
     FlappyBird(FlappyBird),
     Snake(SnakeGame),
+    Maze(MazeGame),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -69,6 +71,7 @@ impl GameType {
             GameType::TicTacToe(_) => pixel_art::TICTACTOE,
             GameType::FlappyBird(_) => pixel_art::FLAPPY_BIRD,
             GameType::Snake(_) => pixel_art::SNAKE,
+            GameType::Maze(_) => pixel_art::MAZE,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -120,6 +123,7 @@ impl Menu {
             1 => GameType::TicTacToe(TicTacToe::new()),
             2 => GameType::FlappyBird(FlappyBird::new(seed)),
             3 => GameType::Snake(SnakeGame::new(seed)),
+            4 => GameType::Maze(MazeGame::new(seed)),
             _ => unreachable!(),
         }
     }
