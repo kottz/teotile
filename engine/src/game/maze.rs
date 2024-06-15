@@ -44,20 +44,12 @@ struct MazeBoard {
 
 impl MazeBoard {
     fn new(seed: u64) -> Self {
-        let tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
-        let mut board = Self { tiles, seed };
-        board.generate_maze();
-        board
-    }
-
-    fn generate_maze(&mut self) {
         let mut tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
         let mut size = GRID_SIZE;
         if GRID_SIZE % 2 == 0 {
-            let tiles = [[MazeTile::Wall; GRID_SIZE+1]; GRID_SIZE+1];
             size += 1;
         }
-        let mut rng = SmallRng::seed_from_u64(self.seed);
+        let mut rng = SmallRng::seed_from_u64(seed);
         let start_pos = (1, 1);
         tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
         let mut directions: [(isize, isize); 4] = [(-2, 0), (2, 0), (0, -2), (0, 2)];
@@ -65,7 +57,7 @@ impl MazeBoard {
 
         stack.insert(0, start_pos);
 
-        while stack.len() > 0 {
+        while !stack.is_empty() {
             let (x, y) = stack.last().unwrap();
             directions.shuffle(&mut rng);
 
@@ -91,7 +83,7 @@ impl MazeBoard {
                 stack.pop();
             }
         }
-        self.tiles = tiles;
+        Self { tiles, seed }
     }
 
     fn find_furthest_tile(&self, start_pos: (usize, usize)) -> (usize, usize) {
@@ -214,8 +206,7 @@ impl Game for MazeGame {
                         let distance = |x: usize, y: usize| {
                             let dx = x as isize - self.player_pos.0 as isize;
                             let dy = y as isize - self.player_pos.1 as isize;
-                            let dist = sqrt((dx * dx + dy * dy) as f64);
-                            dist
+                            sqrt((dx * dx + dy * dy) as f64)
                         };
                         for x in 0..GRID_SIZE {
                             for y in 0..GRID_SIZE {
