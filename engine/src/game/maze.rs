@@ -1,12 +1,14 @@
 use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
 
 use core::time::Duration;
+use libm::sqrt;
 use rand::{rngs::SmallRng, seq::SliceRandom, Rng, SeedableRng};
 use smallvec::SmallVec;
 const GRID_SIZE: usize = 11;
 pub struct MazeGame {
     board: MazeBoard,
     state: MazeGameState,
+    mode: MazeGameMode,
     player_pos: (usize, usize),
     exit_pos: (usize, usize),
     current_time: Duration,
@@ -16,6 +18,12 @@ enum MazeGameState {
     Playing,
     GameOver,
 }
+
+enum MazeGameMode {
+    Normal,
+    FlashLight,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum MazeTile {
     Empty,
@@ -116,6 +124,7 @@ impl MazeGame {
         Self {
             board,
             state: MazeGameState::Playing,
+            mode: MazeGameMode::FlashLight,
             player_pos,
             exit_pos,
             current_time: Duration::from_millis(0),
@@ -151,10 +160,10 @@ impl Game for MazeGame {
             }
             MazeGameState::GameOver => {
                 if input.command_type == CommandType::Select {
-                    self.board = MazeBoard::new(self.board.seed);
+                    self.board = MazeBoard::new(self.board.seed + 1);
                     self.player_pos = (1, 1);
                     // TODO set new exit position after end
-                    self.exit_pos = (GRID_SIZE - 2, GRID_SIZE - 2);
+                    self.exit_pos = self.board.find_furthest_tile(self.player_pos);
                     self.state = MazeGameState::Playing;
                 }
             }
@@ -170,19 +179,51 @@ impl Game for MazeGame {
         let mut render_board = RenderBoard::new();
         match &self.state {
             MazeGameState::Playing => {
-                for x in 0..GRID_SIZE {
-                    for y in 0..GRID_SIZE {
-                        let rgb = match self.board.tiles[x][y] {
-                            MazeTile::Empty => RGB::new(0, 0, 0),
-                            MazeTile::Wall => RGB::new(255, 255, 255),
-                            MazeTile::Player => RGB::new(0, 255, 0),
-                            MazeTile::Exit => RGB::new(255, 0, 0),
+                match &self.mode {
+                    MazeGameMode::Normal => {
+                        for x in 0..GRID_SIZE {
+                            for y in 0..GRID_SIZE {
+                                let rgb = match self.board.tiles[x][y] {
+                                    MazeTile::Empty => RGB::new(0, 0, 0),
+                                    MazeTile::Wall => RGB::new(255, 255, 255),
+                                    MazeTile::Player => RGB::new(0, 255, 0),
+                                    MazeTile::Exit => RGB::new(255, 0, 0),
+                                };
+                                render_board.set(x, y, rgb);
+                            }
+                        }
+                        render_board.set(self.exit_pos.0, self.exit_pos.1, RGB::new(255, 0, 0));
+                    }
+                    MazeGameMode::FlashLight => {
+                        let distance = |x: usize, y: usize| {
+                            let dx = x as isize - self.player_pos.0 as isize;
+                            let dy = y as isize - self.player_pos.1 as isize;
+                            let dist = sqrt((dx * dx + dy * dy) as f64);
+                            dist
                         };
-                        render_board.set(x, y, rgb);
+                        for x in 0..GRID_SIZE {
+                            for y in 0..GRID_SIZE {
+                                let d = distance(x, y);
+                                // fade out wall color when distance is greater
+                                let wall_intensity = (255.0 * (1.0 - d / 3.0)) as u8;
+                                let wall_color =
+                                    RGB::new(wall_intensity, wall_intensity, wall_intensity);
+                                let rgb = match self.board.tiles[x][y] {
+                                    MazeTile::Empty => RGB::new(0, 0, 0),
+                                    MazeTile::Wall => wall_color,
+                                    MazeTile::Player => RGB::new(0, 255, 0),
+                                    MazeTile::Exit => RGB::new(255, 0, 0),
+                                };
+                                render_board.set(x, y, rgb);
+                            }
+                        }
+                        let exit_distance = distance(self.exit_pos.0, self.exit_pos.1);
+                        let exit_wall_intensity = (255.0 * (1.0 - exit_distance / 3.0)) as u8;
+                        let exit_wall_color = RGB::new(exit_wall_intensity, 0, 0);
+                        render_board.set(self.exit_pos.0, self.exit_pos.1, exit_wall_color);
                     }
                 }
                 render_board.set(self.player_pos.0, self.player_pos.1, RGB::new(0, 255, 0));
-                render_board.set(self.exit_pos.0, self.exit_pos.1, RGB::new(255, 0, 0));
             }
             MazeGameState::GameOver => {
                 // TODO render game over screen
