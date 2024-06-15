@@ -1,16 +1,23 @@
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
+use crate::{
+    animation::Animation,
+    game::{CommandType, Game, GameCommand, RenderBoard, Result, RGB},
+};
 
 use core::time::Duration;
 use libm::sqrt;
-use rand::{rngs::SmallRng, seq::SliceRandom, Rng, SeedableRng};
+use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 use smallvec::SmallVec;
-const GRID_SIZE: usize = 11;
+
+const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+const GRID_SIZE: usize = 12;
+
 pub struct MazeGame {
     board: MazeBoard,
     state: MazeGameState,
     mode: MazeGameMode,
     player_pos: (usize, usize),
     exit_pos: (usize, usize),
+    win_animation: Animation,
     current_time: Duration,
 }
 
@@ -28,8 +35,6 @@ enum MazeGameMode {
 enum MazeTile {
     Empty,
     Wall,
-    Player,
-    Exit,
 }
 
 struct MazeBoard {
@@ -40,16 +45,21 @@ struct MazeBoard {
 impl MazeBoard {
     fn new(seed: u64) -> Self {
         let tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
-        // TODO here create a maze for this board
         let mut board = Self { tiles, seed };
         board.generate_maze();
         board
     }
 
     fn generate_maze(&mut self) {
+        let mut tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
+        let mut size = GRID_SIZE;
+        if GRID_SIZE % 2 == 0 {
+            let tiles = [[MazeTile::Wall; GRID_SIZE+1]; GRID_SIZE+1];
+            size += 1;
+        }
         let mut rng = SmallRng::seed_from_u64(self.seed);
         let start_pos = (1, 1);
-        self.tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
+        tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
         let mut directions: [(isize, isize); 4] = [(-2, 0), (2, 0), (0, -2), (0, 2)];
         let mut stack = SmallVec::<[(isize, isize); 128]>::new();
 
@@ -65,13 +75,13 @@ impl MazeBoard {
                 let ny = y + dy;
 
                 if 0 < nx
-                    && nx < GRID_SIZE as isize
+                    && nx < size as isize
                     && 0 < ny
-                    && ny < GRID_SIZE as isize
-                    && self.tiles[ny as usize][nx as usize] == MazeTile::Wall
+                    && ny < size as isize
+                    && tiles[ny as usize][nx as usize] == MazeTile::Wall
                 {
-                    self.tiles[ny as usize][nx as usize] = MazeTile::Empty;
-                    self.tiles[(y + dy / 2) as usize][(x + dx / 2) as usize] = MazeTile::Empty;
+                    tiles[ny as usize][nx as usize] = MazeTile::Empty;
+                    tiles[(y + dy / 2) as usize][(x + dx / 2) as usize] = MazeTile::Empty;
                     stack.push((nx, ny));
                     moved = true;
                     break;
@@ -81,6 +91,7 @@ impl MazeBoard {
                 stack.pop();
             }
         }
+        self.tiles = tiles;
     }
 
     fn find_furthest_tile(&self, start_pos: (usize, usize)) -> (usize, usize) {
@@ -127,6 +138,7 @@ impl MazeGame {
             mode: MazeGameMode::FlashLight,
             player_pos,
             exit_pos,
+            win_animation: Animation::new(WIN_ANIMATION_SPEED),
             current_time: Duration::from_millis(0),
         }
     }
@@ -162,7 +174,6 @@ impl Game for MazeGame {
                 if input.command_type == CommandType::Select {
                     self.board = MazeBoard::new(self.board.seed + 1);
                     self.player_pos = (1, 1);
-                    // TODO set new exit position after end
                     self.exit_pos = self.board.find_furthest_tile(self.player_pos);
                     self.state = MazeGameState::Playing;
                 }
@@ -172,6 +183,13 @@ impl Game for MazeGame {
     }
     fn update(&mut self, delta_time: core::time::Duration) -> Result<()> {
         self.current_time += delta_time;
+
+        match &self.state {
+            MazeGameState::Playing => {}
+            MazeGameState::GameOver => {
+                self.win_animation.update(self.current_time);
+            }
+        }
         Ok(())
     }
 
@@ -186,8 +204,6 @@ impl Game for MazeGame {
                                 let rgb = match self.board.tiles[x][y] {
                                     MazeTile::Empty => RGB::new(0, 0, 0),
                                     MazeTile::Wall => RGB::new(255, 255, 255),
-                                    MazeTile::Player => RGB::new(0, 255, 0),
-                                    MazeTile::Exit => RGB::new(255, 0, 0),
                                 };
                                 render_board.set(x, y, rgb);
                             }
@@ -211,8 +227,6 @@ impl Game for MazeGame {
                                 let rgb = match self.board.tiles[x][y] {
                                     MazeTile::Empty => RGB::new(0, 0, 0),
                                     MazeTile::Wall => wall_color,
-                                    MazeTile::Player => RGB::new(0, 255, 0),
-                                    MazeTile::Exit => RGB::new(255, 0, 0),
                                 };
                                 render_board.set(x, y, rgb);
                             }
@@ -226,7 +240,17 @@ impl Game for MazeGame {
                 render_board.set(self.player_pos.0, self.player_pos.1, RGB::new(0, 255, 0));
             }
             MazeGameState::GameOver => {
-                // TODO render game over screen
+                let color = self.win_animation.get_color();
+                for x in 0..GRID_SIZE {
+                    for y in 0..GRID_SIZE {
+                        let rgb = match self.board.tiles[x][y] {
+                            MazeTile::Empty => RGB::new(0, 0, 0),
+                            MazeTile::Wall => color,
+                        };
+                        render_board.set(x, y, rgb);
+                    }
+                }
+                render_board.set(self.player_pos.0, self.player_pos.1, RGB::new(0, 255, 0));
             }
         }
         Ok(render_board)
