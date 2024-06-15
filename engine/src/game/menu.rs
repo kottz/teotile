@@ -90,7 +90,7 @@ impl GameTypeInfo {
                 };
             }
         }
-        return pixel_art;
+        pixel_art
     }
 }
 
