@@ -1548,6 +1548,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "teotile-tui"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "ratatui",
+ "teotile",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1610,15 +1619,6 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "winnow",
-]
-
-[[package]]
-name = "tui"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "ratatui",
- "teotile",
 ]
 
 [[package]]
