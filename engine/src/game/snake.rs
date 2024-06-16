@@ -86,7 +86,7 @@ impl SnakeGame {
             food: None,
             current_time: Duration::from_millis(0),
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
-            seed
+            seed,
         }
     }
 
@@ -151,7 +151,7 @@ impl Game for SnakeGame {
                     match input_command.command_type {
                         CommandType::Select => {
                             self.state = SnakeState::Playing;
-                            self.snake = Snake::new(self.seed+1);
+                            self.snake = Snake::new(self.seed + 1);
                             self.food = None;
                         }
                         _ => return Ok(()),

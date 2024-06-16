@@ -1,7 +1,7 @@
 use crate::game::RGB;
+use core::f64::consts::PI;
 use core::time::Duration;
 use libm::{fabs, sin};
-use core::f64::consts::PI;
 
 pub struct Animation {
     state: usize,

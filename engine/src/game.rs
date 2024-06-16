@@ -3,17 +3,17 @@ use core::time::Duration;
 
 mod connect_four;
 mod flappy_bird;
+mod maze;
 mod menu;
 mod snake;
 mod tictactoe;
-mod maze;
 
 use connect_four::ConnectFour;
 use flappy_bird::FlappyBird;
+use maze::MazeGame;
 use menu::Menu;
 use snake::SnakeGame;
 use tictactoe::TicTacToe;
-use maze::MazeGame;
 
 pub const GRID_SIZE: usize = 12;
 
