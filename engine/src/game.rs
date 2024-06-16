@@ -6,6 +6,7 @@ mod flappy_bird;
 mod maze;
 mod menu;
 mod snake;
+mod space_invaders;
 mod tictactoe;
 
 use connect_four::ConnectFour;
@@ -13,6 +14,7 @@ use flappy_bird::FlappyBird;
 use maze::MazeGame;
 use menu::Menu;
 use snake::SnakeGame;
+use space_invaders::SpaceInvaders;
 use tictactoe::TicTacToe;
 
 pub const GRID_SIZE: usize = 12;

@@ -8,12 +8,14 @@ use crate::game::ConnectFour;
 use crate::game::FlappyBird;
 use crate::game::MazeGame;
 use crate::game::SnakeGame;
+use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
-const NUM_GAMES: usize = 5;
+
+const NUM_GAMES: usize = 6;
 
 enum MenuState {
     Selecting,
@@ -63,6 +65,7 @@ define_game_type_and_impl!(
     FlappyBird(FlappyBird),
     Snake(SnakeGame),
     Maze(MazeGame),
+    SpaceInvaders(SpaceInvaders),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -75,6 +78,7 @@ impl GameTypeInfo {
             GameTypeInfo::FlappyBird => pixel_art::FLAPPY_BIRD,
             GameTypeInfo::Snake => pixel_art::SNAKE,
             GameTypeInfo::Maze => pixel_art::MAZE,
+            GameTypeInfo::SpaceInvaders => pixel_art::SPACE_INVADERS,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -126,6 +130,7 @@ impl Menu {
             2 => GameTypeInfo::FlappyBird,
             3 => GameTypeInfo::Snake,
             4 => GameTypeInfo::Maze,
+            5 => GameTypeInfo::SpaceInvaders,
             _ => unreachable!(),
         }
     }
@@ -143,6 +148,7 @@ impl Menu {
             GameTypeInfo::FlappyBird => GameType::FlappyBird(FlappyBird::new(seed)),
             GameTypeInfo::Snake => GameType::Snake(SnakeGame::new(seed)),
             GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed)),
+            GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new()),
         };
         self.state = MenuState::RunningGame(game);
     }
