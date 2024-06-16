@@ -21,6 +21,7 @@ pub struct MazeGame {
     current_time: Duration,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum MazeGameState {
     Playing,
     GameOver,
@@ -245,5 +246,106 @@ impl Game for MazeGame {
             }
         }
         Ok(render_board)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::{ButtonState, CommandType, GameCommand, Player};
+
+    #[test]
+    fn test_maze_board_creation() {
+        let seed = 42;
+        let board = MazeBoard::new(seed);
+        assert_eq!(board.seed, seed);
+        assert_eq!(board.tiles[1][1], MazeTile::Empty);
+    }
+
+    #[test]
+    fn test_find_furthest_tile() {
+        let seed = 42;
+        let board = MazeBoard::new(seed);
+        let start_pos = (1, 1);
+        let furthest_tile = board.find_furthest_tile(start_pos);
+        assert!(furthest_tile.0 < GRID_SIZE);
+        assert!(furthest_tile.1 < GRID_SIZE);
+    }
+
+    #[test]
+    fn test_maze_game_creation() {
+        let seed = 42;
+        let game = MazeGame::new(seed);
+        assert_eq!(game.state, MazeGameState::Playing);
+        assert_eq!(game.player_pos, (1, 1));
+        assert_ne!(game.exit_pos, (1, 1));
+    }
+
+    #[test]
+    fn check_collision() {
+        let seed = 42;
+        let mut game = MazeGame::new(seed);
+
+        let left_command = GameCommand {
+            command_type: CommandType::Left,
+            button_state: ButtonState::Pressed,
+            player: Player::Player1,
+        };
+
+        let up_tile = game.board.tiles[1][2];
+        game.process_input(left_command).unwrap();
+        if up_tile == MazeTile::Wall {
+            assert_eq!(game.player_pos, (1, 1));
+        } else {
+            assert_eq!(game.player_pos, (0, 1));
+        }
+        assert_eq!(game.player_pos, (1, 1));
+    }
+
+    #[test]
+    fn test_process_input_game_over() {
+        let seed = 42;
+        let mut game = MazeGame::new(seed);
+
+        // Simulate reaching the exit
+        game.player_pos = game.exit_pos;
+        let right_command = GameCommand {
+            command_type: CommandType::Right,
+            button_state: ButtonState::Pressed,
+            player: Player::Player1,
+        };
+
+        game.process_input(right_command).unwrap();
+        assert_eq!(game.state, MazeGameState::GameOver);
+
+        // Restart game
+        let select_command = GameCommand {
+            command_type: CommandType::Select,
+            button_state: ButtonState::Pressed,
+            player: Player::Player1,
+        };
+
+        game.process_input(select_command).unwrap();
+        assert_eq!(game.state, MazeGameState::Playing);
+        assert_eq!(game.player_pos, (1, 1));
+    }
+
+    #[test]
+    fn test_update_game_over_animation() {
+        let seed = 42;
+        let mut game = MazeGame::new(seed);
+
+        // Simulate reaching the exit
+        game.player_pos = game.exit_pos;
+        let right_command = GameCommand {
+            command_type: CommandType::Right,
+            button_state: ButtonState::Pressed,
+            player: Player::Player1,
+        };
+
+        game.process_input(right_command).unwrap();
+        game.update(Duration::from_millis(100)).unwrap();
+
+        assert!(game.win_animation.get_color().r > 0); // Assuming win_animation changes color over time
     }
 }
