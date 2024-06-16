@@ -223,15 +223,12 @@ impl Game for TicTacToe {
                 for (col, row) in winning_line {
                     match self.active_player {
                         Player::Player1 => {
-                            //let color = RGB::new(s as u8 * 0, s as u8 * 10, s as u8 * 0);
                             draw_x(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                         Player::Player2 => {
-                            //let color = RGB::new(s as u8 * 10, s as u8 * 0, s as u8 * 0);
                             draw_o(row * 3 + 1, col * 3 + 1, &mut render_board, color);
                         }
                     }
-                    //render_board.set(col * 3, row * 3, color);
                 }
             }
             TicTacToeState::Tie => {
@@ -259,7 +256,7 @@ impl Game for TicTacToe {
 impl TicTacToe {
     pub fn new() -> Self {
         Self {
-            board: TicTacToeBoard::new(), // 3x3 grid for Tic Tac Toe
+            board: TicTacToeBoard::new(),
             active_player: Player::Player1,
             active_cell: (0, 0),
             state: TicTacToeState::Playing,
