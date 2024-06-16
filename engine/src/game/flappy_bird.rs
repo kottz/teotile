@@ -67,7 +67,7 @@ impl Player {
             self.pos = (GRID_SIZE - 1) as f64;
         }
 
-        let speed_multiplier = 15.0; //10.0;
+        let speed_multiplier = 15.0;
         self.time += speed_multiplier * delta_time;
     }
 
@@ -126,7 +126,7 @@ impl FlappyBird {
 
     fn add_wall(&mut self) {
         let gap_size = 4;
-        let gap_row = self.smallrng.gen_range(0..=GRID_SIZE - gap_size); //-self.wall_gap);
+        let gap_row = self.smallrng.gen_range(0..=GRID_SIZE - gap_size);
         self.walls.push(Wall::new(10, gap_row, gap_size));
     }
 
@@ -169,8 +169,6 @@ impl Game for FlappyBird {
                         _ => return Ok(()),
                     }
                 }
-
-                // TODO
             }
         }
         Ok(())
@@ -210,39 +208,6 @@ impl Game for FlappyBird {
         Ok(())
     }
 
-    // fn render(&self) -> Result<RenderBoard> {
-    //     let mut render_board = RenderBoard::new();
-    //     match &self.state {
-    //         FlappyBirdState::Playing => {
-    //             for wall in self.walls.iter() {
-    //                 for row in (0..wall.gap_row).chain((wall.gap_row + wall.gap_size)..GRID_SIZE) {
-    //                     render_board.set(wall.col, row, RGB::new(255, 0, 0));
-    //                 }
-    //             }
-    //             render_board.set(self.player.col, self.player.row(), RGB::new(0, 255, 0));
-    //         }
-    //         FlappyBirdState::GameOver => {
-    //             render_board.set(self.player.col, self.player.row(), RGB::new(0, 255, 0));
-    //
-    //             if let Some(first) = self.walls.first() {
-    //                 if first.col == 0 {
-    //                     for row in
-    //                         (0..first.gap_row).chain((first.gap_row + first.gap_size)..GRID_SIZE)
-    //                     {
-    //                         let s = self.game_over_animation_state.state;
-    //                         let f: f64 = s as f64;
-    //                         let s = fabs(sin(f * 2.0 * 3.141 / 20.0)) * 10.0 + 10.0;
-    //                         let color = RGB::new(s as u8 * 10, s as u8 * 10, s as u8 * 10);
-    //                         render_board.set(0, row, color);
-    //                     }
-    //                 }
-    //                 render_board.set(self.player.col, self.player.row(), RGB::new(189, 20, 20));
-    //             }
-    //         }
-    //     }
-    //
-    //     Ok(render_board)
-    // }
     fn render(&self) -> Result<RenderBoard> {
         let mut render_board = RenderBoard::new();
         match &self.state {
