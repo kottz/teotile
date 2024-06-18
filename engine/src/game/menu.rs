@@ -6,16 +6,16 @@ use core::time::Duration;
 
 use crate::game::ConnectFour;
 use crate::game::FlappyBird;
-use crate::game::MazeGame;
 use crate::game::SnakeGame;
 use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
+use crate::game::{MazeGame, MazeGameMode};
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 6;
+const NUM_GAMES: usize = 7;
 
 enum MenuState {
     Selecting,
@@ -65,6 +65,8 @@ define_game_type_and_impl!(
     FlappyBird(FlappyBird),
     Snake(SnakeGame),
     Maze(MazeGame),
+    MazeFlashLight(MazeGame),
+    MazeFlashLightMultiplayer(MazeGame),
     SpaceInvaders(SpaceInvaders),
 );
 
@@ -78,6 +80,8 @@ impl GameTypeInfo {
             GameTypeInfo::FlappyBird => pixel_art::FLAPPY_BIRD,
             GameTypeInfo::Snake => pixel_art::SNAKE,
             GameTypeInfo::Maze => pixel_art::MAZE,
+            GameTypeInfo::MazeFlashLight => pixel_art::MAZE_FLASHLIGHT,
+            GameTypeInfo::MazeFlashLightMultiplayer => pixel_art::MAZE_FLASHLIGHT_MULTIPLAYER,
             GameTypeInfo::SpaceInvaders => pixel_art::SPACE_INVADERS,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
@@ -130,7 +134,9 @@ impl Menu {
             2 => GameTypeInfo::FlappyBird,
             3 => GameTypeInfo::Snake,
             4 => GameTypeInfo::Maze,
-            5 => GameTypeInfo::SpaceInvaders,
+            5 => GameTypeInfo::MazeFlashLight,
+            6 => GameTypeInfo::MazeFlashLightMultiplayer,
+            7 => GameTypeInfo::SpaceInvaders,
             _ => unreachable!(),
         }
     }
@@ -147,7 +153,13 @@ impl Menu {
             GameTypeInfo::TicTacToe => GameType::TicTacToe(TicTacToe::new()),
             GameTypeInfo::FlappyBird => GameType::FlappyBird(FlappyBird::new(seed)),
             GameTypeInfo::Snake => GameType::Snake(SnakeGame::new(seed)),
-            GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed)),
+            GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed, MazeGameMode::Normal)),
+            GameTypeInfo::MazeFlashLight => {
+                GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLight))
+            }
+            GameTypeInfo::MazeFlashLightMultiplayer => {
+                GameType::Maze(MazeGame::new(seed, MazeGameMode::MultiplayerFlashLight))
+            }
             GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new()),
         };
         self.state = MenuState::RunningGame(game);

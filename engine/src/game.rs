@@ -11,7 +11,7 @@ mod tictactoe;
 
 use connect_four::ConnectFour;
 use flappy_bird::FlappyBird;
-use maze::MazeGame;
+use maze::{MazeGame, MazeGameMode};
 use menu::Menu;
 use snake::SnakeGame;
 use space_invaders::SpaceInvaders;
