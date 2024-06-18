@@ -15,7 +15,7 @@ use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 7;
+const NUM_GAMES: usize = 8;
 
 enum MenuState {
     Selecting,
@@ -33,6 +33,7 @@ macro_rules! define_game_type_and_impl {
         enum GameTypeInfo {
             $($variant),+
         }
+        #[allow(dead_code)]
         enum GameType {
             $($variant($game)),+
         }
@@ -158,7 +159,7 @@ impl Menu {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLight))
             }
             GameTypeInfo::MazeFlashLightMultiplayer => {
-                GameType::Maze(MazeGame::new(seed, MazeGameMode::MultiplayerFlashLight))
+                GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLightMultiplayer))
             }
             GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new()),
         };

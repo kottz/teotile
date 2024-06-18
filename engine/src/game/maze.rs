@@ -31,7 +31,7 @@ enum MazeGameState {
 pub enum MazeGameMode {
     Normal,
     FlashLight,
-    MultiplayerFlashLight,
+    FlashLightMultiplayer,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -151,7 +151,7 @@ impl Game for MazeGame {
                     _ => (0, 0),
                 };
 
-                let player_index = if let MazeGameMode::MultiplayerFlashLight = self.mode {
+                let player_index = if let MazeGameMode::FlashLightMultiplayer = self.mode {
                     match input.player {
                         Player::Player1 => 0,
                         Player::Player2 => 1,
@@ -250,7 +250,7 @@ impl Game for MazeGame {
                         RGB::new(0, 255, 0),
                     );
                 }
-                MazeGameMode::MultiplayerFlashLight => {
+                MazeGameMode::FlashLightMultiplayer => {
                     let distance = |x: usize, y: usize, player_index: usize| {
                         let dx = x as isize - self.player_pos[player_index].0 as isize;
                         let dy = y as isize - self.player_pos[player_index].1 as isize;
@@ -331,7 +331,7 @@ impl Game for MazeGame {
                     self.player_pos[0].1,
                     RGB::new(0, 255, 0),
                 );
-                if let MazeGameMode::MultiplayerFlashLight = self.mode {
+                if let MazeGameMode::FlashLightMultiplayer = self.mode {
                     render_board.set(
                         self.player_pos[1].0,
                         self.player_pos[1].1,
