@@ -5,6 +5,7 @@ members = [
     "tui",
     "embedded",
     "web",
+    "rpi",
 ]
 default-members = [
     "tui",
