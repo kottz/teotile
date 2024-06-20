@@ -1,31 +1,48 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
+use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
+use crate::RenderBoard;
+use crate::RGB;
+use anyhow::Result;
 use core::time::Duration;
 use rand::RngCore;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use smallvec::SmallVec;
 
+use super::GameMode;
+
 const GRID_SIZE: usize = 12;
+const MAX_PLAYERS: usize = 2;
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 
-#[derive(Default)]
+// #[derive(Debug, Clone, Copy, PartialEq)]
+// pub enum SpaceInvadersMode {
+//     SinglePlayer,
+//     MultiPlayer,
+// }
+
+#[derive(Debug, PartialEq)]
+enum GameState {
+    Playing,
+    GameOver(Option<Player>),
+}
+
+#[derive(Debug, Clone, Copy)]
 struct Spaceship {
     col: usize,
+    player: Player,
 }
 
 impl Spaceship {
+    fn new(player: Player, col: usize) -> Self {
+        Self { player, col }
+    }
+
     fn move_horizontal(&mut self, direction: isize) {
         self.col = (self.col as isize + direction).clamp(0, GRID_SIZE as isize - 1) as usize;
     }
 }
 
-#[derive(Clone, Copy, Default)]
-struct Entity {
-    row: usize,
-    col: usize,
-}
-
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Projectile {
     row: f64,
     col: usize,
@@ -47,32 +64,27 @@ impl Projectile {
 }
 
 pub struct SpaceInvaders {
+    mode: GameMode,
     state: GameState,
-    spaceship: Spaceship,
-    aliens: SmallVec<[Entity; 128]>,
+    spaceships: SmallVec<[Spaceship; MAX_PLAYERS]>,
+    aliens: SmallVec<[(usize, usize); 128]>,
     projectiles: SmallVec<[Projectile; 128]>,
     current_time: Duration,
     alien_direction: isize,
     alien_move_period: f64,
     last_alien_move_time: f64,
     game_over_animation: Animation,
-    walls: Option<SmallVec<[Entity; 32]>>,
+    walls: Option<SmallVec<[(usize, usize); 32]>>,
     difficulty: u8,
     rng: SmallRng,
 }
 
-enum GameState {
-    Playing,
-    GameOver,
-}
-
 impl SpaceInvaders {
-    pub fn new(seed: u64, use_walls: bool, difficulty: u8) -> Self {
+    pub fn new(seed: u64, use_walls: bool, difficulty: u8, mode: GameMode) -> Self {
         let mut aliens = SmallVec::with_capacity(128);
-
         for row in 8..11 {
             for col in 2..GRID_SIZE - 2 {
-                aliens.push(Entity { row, col });
+                aliens.push((row, col));
             }
         }
 
@@ -80,7 +92,7 @@ impl SpaceInvaders {
             let mut walls = SmallVec::with_capacity(32);
             for col in [2, 5, 8, 11] {
                 for row in 1..3 {
-                    walls.push(Entity { row, col });
+                    walls.push((row, col));
                 }
             }
             Some(walls)
@@ -88,9 +100,16 @@ impl SpaceInvaders {
             None
         };
 
+        let mut spaceships = SmallVec::new();
+        spaceships.push(Spaceship::new(Player::Player1, 0));
+        if mode == GameMode::MultiPlayer {
+            spaceships.push(Spaceship::new(Player::Player2, GRID_SIZE - 1));
+        }
+
         Self {
+            mode,
             state: GameState::Playing,
-            spaceship: Spaceship::default(),
+            spaceships,
             aliens,
             projectiles: SmallVec::with_capacity(128),
             current_time: Duration::default(),
@@ -104,15 +123,18 @@ impl SpaceInvaders {
         }
     }
 
-    fn move_spaceship(&mut self, direction: isize) {
-        self.spaceship.move_horizontal(direction);
+    fn move_spaceship(&mut self, direction: isize, player: Player) {
+        if let Some(spaceship) = self.spaceships.iter_mut().find(|s| s.player == player) {
+            spaceship.move_horizontal(direction);
+        }
     }
 
-    fn shoot_projectile(&mut self) {
-        let row = 1;
+    fn shoot_projectile(&mut self, player: Player) {
         const FIRE_SPEED: f64 = 10.0;
-        self.projectiles
-            .push(Projectile::new(row, self.spaceship.col, 1, FIRE_SPEED));
+        if let Some(spaceship) = self.spaceships.iter().find(|s| s.player == player) {
+            self.projectiles
+                .push(Projectile::new(1, spaceship.col, 1, FIRE_SPEED));
+        }
     }
 
     fn move_aliens(&mut self) {
@@ -120,13 +142,13 @@ impl SpaceInvaders {
         let mut lowest_alien_row = GRID_SIZE;
 
         for alien in &mut self.aliens {
-            alien.col = (alien.col as isize + self.alien_direction) as usize;
+            alien.1 = (alien.1 as isize + self.alien_direction) as usize;
 
-            if alien.col == 0 || alien.col == GRID_SIZE - 1 {
+            if alien.1 == 0 || alien.1 == GRID_SIZE - 1 {
                 change_direction = true;
             }
 
-            lowest_alien_row = lowest_alien_row.min(alien.row);
+            lowest_alien_row = lowest_alien_row.min(alien.0);
         }
 
         if change_direction {
@@ -134,13 +156,13 @@ impl SpaceInvaders {
 
             if self.rng.gen_bool(0.8) {
                 for alien in &mut self.aliens {
-                    alien.row = alien.row.saturating_sub(1);
+                    alien.0 = alien.0.saturating_sub(1);
                 }
             }
         }
 
         if lowest_alien_row <= 1 {
-            self.state = GameState::GameOver;
+            self.state = GameState::GameOver(None);
         }
     }
 
@@ -161,11 +183,11 @@ impl SpaceInvaders {
 
     fn detect_collisions(&mut self) {
         // Alien-projectile collisions
-        self.aliens.retain(|alien| {
+        self.aliens.retain(|&mut (row, col)| {
             !self.projectiles.iter_mut().any(|projectile| {
                 if projectile.active
-                    && (libm::round(projectile.row) as usize == alien.row)
-                    && projectile.col == alien.col
+                    && (libm::round(projectile.row) as usize == row)
+                    && projectile.col == col
                     && projectile.direction > 0
                 {
                     projectile.active = false;
@@ -177,11 +199,11 @@ impl SpaceInvaders {
 
         // Wall-projectile collisions
         if let Some(walls) = &mut self.walls {
-            walls.retain(|wall| {
+            walls.retain(|&mut (row, col)| {
                 !self.projectiles.iter_mut().any(|projectile| {
                     if projectile.active
-                        && (libm::round(projectile.row) as usize == wall.row)
-                        && projectile.col == wall.col
+                        && (libm::round(projectile.row) as usize == row)
+                        && projectile.col == col
                     {
                         projectile.active = false;
                         return true;
@@ -192,15 +214,16 @@ impl SpaceInvaders {
         }
 
         // Player-projectile collisions
-        let player_hit = self.projectiles.iter().any(|projectile| {
-            projectile.active
-                && (libm::round(projectile.row) as usize == 0)
-                && projectile.col == self.spaceship.col
-                && projectile.direction < 0
-        });
-
-        if player_hit {
-            self.state = GameState::GameOver;
+        for spaceship in &self.spaceships {
+            if self.projectiles.iter().any(|projectile| {
+                projectile.active
+                    && (libm::round(projectile.row) as usize == 0)
+                    && projectile.col == spaceship.col
+                    && projectile.direction < 0
+            }) {
+                self.state = GameState::GameOver(Some(spaceship.player));
+                return;
+            }
         }
 
         self.projectiles.retain(|projectile| projectile.active);
@@ -209,10 +232,10 @@ impl SpaceInvaders {
     fn enemy_fire(&mut self) {
         let fire_chance = self.difficulty as f32 / 100.0;
         const ALIEN_FIRE_SPEED: f64 = 5.0;
-        for alien in &self.aliens {
+        for &(row, col) in &self.aliens {
             if self.rng.gen_bool(fire_chance as f64) {
                 self.projectiles
-                    .push(Projectile::new(alien.row, alien.col, -1, ALIEN_FIRE_SPEED));
+                    .push(Projectile::new(row, col, -1, ALIEN_FIRE_SPEED));
             }
         }
     }
@@ -224,18 +247,25 @@ impl Game for SpaceInvaders {
             GameState::Playing => {
                 if let ButtonState::Pressed = input_command.button_state {
                     match input_command.command_type {
-                        CommandType::Left => self.move_spaceship(-1),
-                        CommandType::Right => self.move_spaceship(1),
-                        CommandType::Up | CommandType::Select => self.shoot_projectile(),
+                        CommandType::Left => self.move_spaceship(-1, input_command.player),
+                        CommandType::Right => self.move_spaceship(1, input_command.player),
+                        CommandType::Up | CommandType::Select => {
+                            self.shoot_projectile(input_command.player)
+                        }
                         _ => {}
                     }
                 }
             }
-            GameState::GameOver => {
+            GameState::GameOver(_) => {
                 if let (ButtonState::Pressed, CommandType::Select) =
                     (input_command.button_state, input_command.command_type)
                 {
-                    *self = Self::new(self.rng.next_u64(), self.walls.is_some(), self.difficulty);
+                    *self = Self::new(
+                        self.rng.next_u64() + 69420,
+                        self.walls.is_some(),
+                        self.difficulty,
+                        self.mode,
+                    );
                 }
             }
         }
@@ -260,10 +290,10 @@ impl Game for SpaceInvaders {
                 self.detect_collisions();
 
                 if self.aliens.is_empty() {
-                    self.state = GameState::GameOver;
+                    self.state = GameState::GameOver(None);
                 }
             }
-            GameState::GameOver => {
+            GameState::GameOver(_) => {
                 self.game_over_animation.update(self.current_time);
             }
         }
@@ -275,8 +305,8 @@ impl Game for SpaceInvaders {
 
         match self.state {
             GameState::Playing => {
-                for alien in &self.aliens {
-                    render_board.set(alien.col, alien.row, RGB::new(255, 0, 0));
+                for &(row, col) in &self.aliens {
+                    render_board.set(col, row, RGB::new(255, 0, 0));
                 }
 
                 for projectile in &self.projectiles {
@@ -290,19 +320,36 @@ impl Game for SpaceInvaders {
                 }
 
                 if let Some(walls) = &self.walls {
-                    for wall in walls {
-                        render_board.set(wall.col, wall.row, RGB::new(0, 0, 255));
+                    for &(row, col) in walls {
+                        render_board.set(col, row, RGB::new(0, 0, 255));
                     }
                 }
 
-                render_board.set(self.spaceship.col, 0, RGB::new(0, 255, 0));
-            }
-            GameState::GameOver => {
-                let color = self.game_over_animation.get_color();
-                for alien in &self.aliens {
-                    render_board.set(alien.col, alien.row, color);
+                for (i, spaceship) in self.spaceships.iter().enumerate() {
+                    let color = if i == 0 {
+                        RGB::new(0, 255, 0)
+                    } else {
+                        RGB::new(0, 255, 255)
+                    };
+                    render_board.set(spaceship.col, 0, color);
                 }
-                render_board.set(self.spaceship.col, 0, RGB::new(255, 0, 0));
+            }
+            GameState::GameOver(winner) => {
+                let game_over_color = self.game_over_animation.get_color();
+                for &(row, col) in &self.aliens {
+                    render_board.set(col, row, game_over_color);
+                }
+                for spaceship in &self.spaceships {
+                    let color = if Some(spaceship.player) == winner {
+                        match spaceship.player {
+                            Player::Player1 => RGB::new(0, 255, 0),
+                            Player::Player2 => RGB::new(0, 255, 255),
+                        }
+                    } else {
+                        RGB::new(255, 0, 0)
+                    };
+                    render_board.set(spaceship.col, 0, color);
+                }
             }
         }
 

@@ -6,17 +6,17 @@ use core::time::Duration;
 
 use crate::game::ConnectFour;
 use crate::game::FlappyBird;
-use crate::game::{SnakeGame, SnakeGameMode};
+use crate::game::GameMode;
 use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
-use crate::game::GameMode;
+use crate::game::{SnakeGame, SnakeGameMode};
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 9;
+const NUM_GAMES: usize = 10;
 
 enum MenuState {
     Selecting,
@@ -71,6 +71,7 @@ define_game_type_and_impl!(
     MazeFlashLight(MazeGame),
     MazeFlashLightMultiplayer(MazeGame),
     SpaceInvaders(SpaceInvaders),
+    SpaceInvadersMultiPlayer(SpaceInvaders),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -87,6 +88,7 @@ impl GameTypeInfo {
             GameTypeInfo::MazeFlashLight => pixel_art::MAZE_FLASHLIGHT,
             GameTypeInfo::MazeFlashLightMultiplayer => pixel_art::MAZE_FLASHLIGHT_MULTIPLAYER,
             GameTypeInfo::SpaceInvaders => pixel_art::SPACE_INVADERS,
+            GameTypeInfo::SpaceInvadersMultiPlayer => pixel_art::SPACE_INVADERS_MULTIPLAYER,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -142,6 +144,7 @@ impl Menu {
             6 => GameTypeInfo::MazeFlashLight,
             7 => GameTypeInfo::MazeFlashLightMultiplayer,
             8 => GameTypeInfo::SpaceInvaders,
+            9 => GameTypeInfo::SpaceInvadersMultiPlayer,
             _ => unreachable!(),
         }
     }
@@ -170,7 +173,12 @@ impl Menu {
             GameTypeInfo::MazeFlashLightMultiplayer => {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLightMultiplayer))
             }
-            GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new(seed, true, 2)),
+            GameTypeInfo::SpaceInvaders => {
+                GameType::SpaceInvaders(SpaceInvaders::new(seed, true, 2, GameMode::SinglePlayer))
+            }
+            GameTypeInfo::SpaceInvadersMultiPlayer => {
+                GameType::SpaceInvaders(SpaceInvaders::new(seed, false, 4, GameMode::MultiPlayer))
+            }
         };
         self.state = MenuState::RunningGame(game);
     }
