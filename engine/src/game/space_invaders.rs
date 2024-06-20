@@ -213,17 +213,24 @@ impl SpaceInvaders {
             });
         }
 
-        // Player-projectile collisions
-        for spaceship in &self.spaceships {
-            if self.projectiles.iter().any(|projectile| {
-                projectile.active
+        // Remove spaceship if hit by projectile
+        self.spaceships.retain(|spaceship| {
+            !self.projectiles.iter_mut().any(|projectile| {
+                if projectile.active
                     && (libm::round(projectile.row) as usize == 0)
                     && projectile.col == spaceship.col
                     && projectile.direction < 0
-            }) {
-                self.state = GameState::GameOver(Some(spaceship.player));
-                return;
-            }
+                {
+                    projectile.active = false;
+                    true
+                } else {
+                    false
+                }
+            })
+        });
+
+        if self.spaceships.is_empty() {
+            self.state = GameState::GameOver(None);
         }
 
         self.projectiles.retain(|projectile| projectile.active);
