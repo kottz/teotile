@@ -10,6 +10,7 @@ use crate::game::{SnakeGame, SnakeGameMode};
 use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
+use crate::game::GameMode;
 
 use crate::pixel_art;
 

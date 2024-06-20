@@ -41,6 +41,12 @@ pub trait Game {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GameMode {
+    SinglePlayer,
+    MultiPlayer,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ButtonState {
     Pressed,
     Released,
