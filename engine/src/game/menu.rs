@@ -15,7 +15,7 @@ use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 8;
+const NUM_GAMES: usize = 9;
 
 enum MenuState {
     Selecting,
@@ -81,7 +81,7 @@ impl GameTypeInfo {
             GameTypeInfo::TicTacToe => pixel_art::TICTACTOE,
             GameTypeInfo::FlappyBird => pixel_art::FLAPPY_BIRD,
             GameTypeInfo::Snake => pixel_art::SNAKE,
-            GameTypeInfo::SnakeMultiPlayer => pixel_art::SNAKE,
+            GameTypeInfo::SnakeMultiPlayer => pixel_art::SNAKE_MULTIPLAYER,
             GameTypeInfo::Maze => pixel_art::MAZE,
             GameTypeInfo::MazeFlashLight => pixel_art::MAZE_FLASHLIGHT,
             GameTypeInfo::MazeFlashLightMultiplayer => pixel_art::MAZE_FLASHLIGHT_MULTIPLAYER,
@@ -169,7 +169,7 @@ impl Menu {
             GameTypeInfo::MazeFlashLightMultiplayer => {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLightMultiplayer))
             }
-            GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new()),
+            GameTypeInfo::SpaceInvaders => GameType::SpaceInvaders(SpaceInvaders::new(seed, true, 2)),
         };
         self.state = MenuState::RunningGame(game);
     }
