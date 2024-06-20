@@ -1,5 +1,5 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand};
+use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
 use crate::RenderBoard;
 use crate::RGB;
 use anyhow::Result;
@@ -8,33 +8,43 @@ use rand::{rngs::SmallRng, Rng, SeedableRng};
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
+const MAX_SNAKES: usize = 2;
 const UPDATE_INTERVAL: Duration = Duration::from_millis(150);
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 
-#[derive(Debug, PartialEq)]
-enum SnakeState {
-    Playing,
-    GameOver,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SnakeGameMode {
+    SinglePlayer,
+    MultiPlayer,
 }
 
+#[derive(Debug, PartialEq)]
+enum GameState {
+    Playing,
+    GameOver(Option<Player>),
+}
+
+#[derive(Debug, Clone)]
 struct Snake {
     body: SmallVec<[(usize, usize); GRID_SIZE]>,
     direction: (i32, i32),
-    last_update_time: Duration,
-    rng: SmallRng,
+    next_direction: (i32, i32),
+    player: Player,
+    growth_pending: usize,
     move_queued: bool,
 }
 
 impl Snake {
-    fn new(seed: u64) -> Self {
-        let mut body = SmallVec::<[(usize, usize); GRID_SIZE]>::new();
-        body.push((GRID_SIZE / 2, GRID_SIZE / 2));
+    fn new(player: Player, start_pos: (usize, usize)) -> Self {
+        let mut body = SmallVec::new();
+        body.push(start_pos);
 
         Self {
             body,
             direction: (1, 0),
-            last_update_time: Duration::from_millis(0),
-            rng: SmallRng::seed_from_u64(seed),
+            next_direction: (1, 0),
+            player,
+            growth_pending: 0,
             move_queued: false,
         }
     }
@@ -43,119 +53,169 @@ impl Snake {
         self.body[0]
     }
 
+    fn set_direction(&mut self, new_direction: (i32, i32)) {
+        if !self.move_queued
+            && (new_direction.0 != -self.direction.0 || new_direction.1 != -self.direction.1)
+        {
+            self.next_direction = new_direction;
+            self.move_queued = true;
+        }
+    }
+
     fn move_snake(&mut self) {
+        self.direction = self.next_direction;
+        self.move_queued = false;
+
         let (dx, dy) = self.direction;
         let (x, y) = self.head();
 
-        let mut new_x = x as i32 + dx;
-        let mut new_y = y as i32 + dy;
+        let new_x = (x as i32 + dx).rem_euclid(GRID_SIZE as i32) as usize;
+        let new_y = (y as i32 + dy).rem_euclid(GRID_SIZE as i32) as usize;
 
-        if new_x < 0 {
-            new_x = GRID_SIZE as i32 - 1;
-        }
-        if new_y < 0 {
-            new_y = GRID_SIZE as i32 - 1;
-        }
-        if new_x >= GRID_SIZE as i32 {
-            new_x = 0;
-        }
-        if new_y >= GRID_SIZE as i32 {
-            new_y = 0;
-        }
+        self.body.insert(0, (new_x, new_y));
 
-        self.body.insert(0, (new_x as usize, new_y as usize));
-        self.body.pop();
-        self.move_queued = false;
+        if self.growth_pending > 0 {
+            self.growth_pending -= 1;
+        } else {
+            self.body.pop();
+        }
+    }
+
+    fn grow(&mut self) {
+        self.growth_pending += 1;
     }
 }
 
 pub struct SnakeGame {
-    state: SnakeState,
-    snake: Snake,
-    food: Option<(usize, usize)>,
+    mode: SnakeGameMode,
+    state: GameState,
+    snakes: SmallVec<[Snake; MAX_SNAKES]>,
+    food: SmallVec<[(usize, usize); 2]>,
     current_time: Duration,
+    last_update_time: Duration,
     game_over_animation: Animation,
-    seed: u64,
+    rng: SmallRng,
+    num_food: usize,
 }
 
 impl SnakeGame {
-    pub fn new(seed: u64) -> Self {
-        Self {
-            state: SnakeState::Playing,
-            snake: Snake::new(seed),
-            food: None,
-            current_time: Duration::from_millis(0),
-            game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
-            seed,
+    pub fn new(seed: u64, mode: SnakeGameMode) -> Self {
+        let rng = SmallRng::seed_from_u64(seed);
+        let mut snakes = SmallVec::new();
+        snakes.push(Snake::new(Player::Player1, (GRID_SIZE / 4, GRID_SIZE / 2)));
+
+        let num_food = match mode {
+            SnakeGameMode::SinglePlayer => 1,
+            SnakeGameMode::MultiPlayer => 2,
+        };
+
+        if mode == SnakeGameMode::MultiPlayer {
+            snakes.push(Snake::new(
+                Player::Player2,
+                (3 * GRID_SIZE / 4, GRID_SIZE / 2),
+            ));
         }
+
+        let mut game = Self {
+            mode,
+            state: GameState::Playing,
+            snakes,
+            food: SmallVec::new(),
+            current_time: Duration::ZERO,
+            last_update_time: Duration::ZERO,
+            game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
+            rng,
+            num_food,
+        };
+
+        game.spawn_food();
+        game
     }
 
     fn spawn_food(&mut self) {
-        loop {
-            let x = self.snake.rng.gen_range(0..GRID_SIZE);
-            let y = self.snake.rng.gen_range(0..GRID_SIZE);
+        while self.food.len() < self.num_food {
+            let x = self.rng.gen_range(0..GRID_SIZE);
+            let y = self.rng.gen_range(0..GRID_SIZE);
 
-            if !self.snake.body.contains(&(x, y)) {
-                self.food = Some((x, y));
-                break;
+            if !self.snakes.iter().any(|snake| snake.body.contains(&(x, y)))
+                && !self.food.contains(&(x, y))
+            {
+                self.food.push((x, y));
             }
         }
     }
 
-    fn check_collision(&self) -> bool {
-        let head = self.snake.head();
-        if let Some(body) = self.snake.body.get(2..) {
-            let c = body.contains(&head);
-            return c;
+    fn check_collisions(&self) -> Option<GameState> {
+        for (i, snake) in self.snakes.iter().enumerate() {
+            let head = snake.head();
+
+            // Self-collision
+            if snake.body[1..].contains(&head) {
+                return Some(match self.mode {
+                    SnakeGameMode::SinglePlayer => GameState::GameOver(None),
+                    SnakeGameMode::MultiPlayer => {
+                        GameState::GameOver(Some(self.snakes[1 - i].player))
+                    }
+                });
+            }
+
+            // Collision with other snake (multiplayer only)
+            if self.mode == SnakeGameMode::MultiPlayer {
+                let other_snake = &self.snakes[1 - i];
+                if other_snake.body.contains(&head) {
+                    return Some(GameState::GameOver(Some(other_snake.player)));
+                }
+            }
         }
-        false
+
+        None
+    }
+
+    fn process_food(&mut self) {
+        let mut food_eaten = false;
+
+        // Check for food collisions and grow snakes
+        for snake in &mut self.snakes {
+            if let Some(food_index) = self.food.iter().position(|&f| f == snake.head()) {
+                snake.grow();
+                self.food.swap_remove(food_index);
+                food_eaten = true;
+            }
+        }
+
+        if food_eaten {
+            self.spawn_food();
+        }
     }
 }
 
 impl Game for SnakeGame {
     fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
-        match &self.state {
-            SnakeState::Playing => {
+        match self.state {
+            GameState::Playing => {
                 if let ButtonState::Pressed = input_command.button_state {
-                    match input_command.command_type {
-                        CommandType::Up => {
-                            if self.snake.direction != (0, -1) && !self.snake.move_queued {
-                                self.snake.move_queued = true;
-                                self.snake.direction = (0, 1);
-                            }
-                        }
-                        CommandType::Down => {
-                            if self.snake.direction != (0, 1) && !self.snake.move_queued {
-                                self.snake.move_queued = true;
-                                self.snake.direction = (0, -1);
-                            }
-                        }
-                        CommandType::Left => {
-                            if self.snake.direction != (1, 0) && !self.snake.move_queued {
-                                self.snake.move_queued = true;
-                                self.snake.direction = (-1, 0);
-                            }
-                        }
-                        CommandType::Right => {
-                            if self.snake.direction != (-1, 0) && !self.snake.move_queued {
-                                self.snake.move_queued = true;
-                                self.snake.direction = (1, 0);
-                            }
-                        }
-                        _ => {}
+                    let direction = match input_command.command_type {
+                        CommandType::Up => (0, 1),
+                        CommandType::Down => (0, -1),
+                        CommandType::Left => (-1, 0),
+                        CommandType::Right => (1, 0),
+                        _ => return Ok(()),
+                    };
+
+                    if let Some(snake) = self
+                        .snakes
+                        .iter_mut()
+                        .find(|s| s.player == input_command.player)
+                    {
+                        snake.set_direction(direction);
                     }
                 }
             }
-            SnakeState::GameOver => {
-                if let ButtonState::Pressed = input_command.button_state {
-                    match input_command.command_type {
-                        CommandType::Select => {
-                            self.state = SnakeState::Playing;
-                            self.snake = Snake::new(self.seed + 1);
-                            self.food = None;
-                        }
-                        _ => return Ok(()),
-                    }
+            GameState::GameOver(_) => {
+                if let (ButtonState::Pressed, CommandType::Select) =
+                    (input_command.button_state, input_command.command_type)
+                {
+                    *self = SnakeGame::new(self.rng.gen(), self.mode);
                 }
             }
         }
@@ -164,29 +224,24 @@ impl Game for SnakeGame {
 
     fn update(&mut self, delta_time: Duration) -> Result<()> {
         self.current_time += delta_time;
-        match &self.state {
-            SnakeState::Playing => {
-                if self.current_time - self.snake.last_update_time > UPDATE_INTERVAL {
-                    self.snake.last_update_time = self.current_time;
-                    self.snake.move_snake();
 
-                    if let Some(food) = self.food {
-                        if self.snake.head() == food {
-                            self.snake.body.push(*self.snake.body.last().unwrap());
-                            self.food = None;
-                        }
+        match self.state {
+            GameState::Playing => {
+                if self.current_time - self.last_update_time > UPDATE_INTERVAL {
+                    self.last_update_time = self.current_time;
+
+                    for snake in &mut self.snakes {
+                        snake.move_snake();
                     }
 
-                    if self.food.is_none() {
-                        self.spawn_food();
-                    }
+                    self.process_food();
 
-                    if self.check_collision() {
-                        self.state = SnakeState::GameOver;
+                    if let Some(new_state) = self.check_collisions() {
+                        self.state = new_state;
                     }
                 }
             }
-            SnakeState::GameOver => {
+            GameState::GameOver(_) => {
                 self.game_over_animation.update(self.current_time);
             }
         }
@@ -195,20 +250,55 @@ impl Game for SnakeGame {
 
     fn render(&self) -> Result<RenderBoard> {
         let mut render_board = RenderBoard::new();
+
         match &self.state {
-            SnakeState::Playing => {
-                for &(x, y) in self.snake.body.iter() {
-                    render_board.set(x, y, RGB::new(0, 255, 0));
+            GameState::Playing => {
+                for snake in &self.snakes {
+                    let color = match snake.player {
+                        Player::Player1 => RGB::new(0, 255, 0),
+                        Player::Player2 => RGB::new(0, 0, 255),
+                    };
+                    for &(x, y) in &snake.body {
+                        render_board.set(x, y, color);
+                    }
                 }
 
-                if let Some((x, y)) = self.food {
+                for &(x, y) in &self.food {
                     render_board.set(x, y, RGB::new(255, 0, 0));
                 }
             }
-            SnakeState::GameOver => {
-                let color = self.game_over_animation.get_color();
-                for &(x, y) in self.snake.body.iter() {
-                    render_board.set(x, y, color);
+            GameState::GameOver(winner) => {
+                let game_over_color = self.game_over_animation.get_color();
+
+                for snake in &self.snakes {
+                    let color = if Some(snake.player) != *winner {
+                        game_over_color
+                    } else {
+                        match snake.player {
+                            Player::Player1 => RGB::new(0, 255, 0),
+                            Player::Player2 => RGB::new(0, 0, 255),
+                        }
+                    };
+
+                    for &(x, y) in snake.body.iter().skip(1) {
+                        render_board.set(x, y, color);
+                    }
+                }
+
+                // Second pass: render snake heads
+                // so the loss is more visible
+                for snake in &self.snakes {
+                    let color = if Some(snake.player) != *winner {
+                        game_over_color
+                    } else {
+                        match snake.player {
+                            Player::Player1 => RGB::new(0, 255, 0),
+                            Player::Player2 => RGB::new(0, 0, 255),
+                        }
+                    };
+
+                    let &(head_x, head_y) = snake.body.first().unwrap();
+                    render_board.set(head_x, head_y, color);
                 }
             }
         }

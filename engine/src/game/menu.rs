@@ -6,7 +6,7 @@ use core::time::Duration;
 
 use crate::game::ConnectFour;
 use crate::game::FlappyBird;
-use crate::game::SnakeGame;
+use crate::game::{SnakeGame, SnakeGameMode};
 use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
@@ -65,6 +65,7 @@ define_game_type_and_impl!(
     TicTacToe(TicTacToe),
     FlappyBird(FlappyBird),
     Snake(SnakeGame),
+    SnakeMultiPlayer(SnakeGame),
     Maze(MazeGame),
     MazeFlashLight(MazeGame),
     MazeFlashLightMultiplayer(MazeGame),
@@ -80,6 +81,7 @@ impl GameTypeInfo {
             GameTypeInfo::TicTacToe => pixel_art::TICTACTOE,
             GameTypeInfo::FlappyBird => pixel_art::FLAPPY_BIRD,
             GameTypeInfo::Snake => pixel_art::SNAKE,
+            GameTypeInfo::SnakeMultiPlayer => pixel_art::SNAKE,
             GameTypeInfo::Maze => pixel_art::MAZE,
             GameTypeInfo::MazeFlashLight => pixel_art::MAZE_FLASHLIGHT,
             GameTypeInfo::MazeFlashLightMultiplayer => pixel_art::MAZE_FLASHLIGHT_MULTIPLAYER,
@@ -134,10 +136,11 @@ impl Menu {
             1 => GameTypeInfo::TicTacToe,
             2 => GameTypeInfo::FlappyBird,
             3 => GameTypeInfo::Snake,
-            4 => GameTypeInfo::Maze,
-            5 => GameTypeInfo::MazeFlashLight,
-            6 => GameTypeInfo::MazeFlashLightMultiplayer,
-            7 => GameTypeInfo::SpaceInvaders,
+            4 => GameTypeInfo::SnakeMultiPlayer,
+            5 => GameTypeInfo::Maze,
+            6 => GameTypeInfo::MazeFlashLight,
+            7 => GameTypeInfo::MazeFlashLightMultiplayer,
+            8 => GameTypeInfo::SpaceInvaders,
             _ => unreachable!(),
         }
     }
@@ -153,7 +156,12 @@ impl Menu {
             GameTypeInfo::ConnectFour => GameType::ConnectFour(ConnectFour::new()),
             GameTypeInfo::TicTacToe => GameType::TicTacToe(TicTacToe::new()),
             GameTypeInfo::FlappyBird => GameType::FlappyBird(FlappyBird::new(seed)),
-            GameTypeInfo::Snake => GameType::Snake(SnakeGame::new(seed)),
+            GameTypeInfo::Snake => {
+                GameType::Snake(SnakeGame::new(seed, SnakeGameMode::SinglePlayer))
+            }
+            GameTypeInfo::SnakeMultiPlayer => {
+                GameType::Snake(SnakeGame::new(seed, SnakeGameMode::MultiPlayer))
+            }
             GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed, MazeGameMode::Normal)),
             GameTypeInfo::MazeFlashLight => {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLight))
