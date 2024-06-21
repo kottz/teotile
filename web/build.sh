@@ -13,4 +13,7 @@ cp -r pkg dist/
 # Copy static files
 cp static/* dist/
 
+# To prevent github action from skipping
+rm dist/pkg/.gitignore
+
 echo "Build complete. Output is in the dist directory."
