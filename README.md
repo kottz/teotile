@@ -8,3 +8,5 @@ Teotile is a simple application used to run simple pixel games on a 12x12 LED pi
 - **Tic-Tac-Toe**
 - **Flappy Bird**
 - **Snake**
+- **Maze**
+- **Space Invaders**
