@@ -26,7 +26,7 @@ enum GameState {
 
 #[derive(Debug, Clone)]
 struct Snake {
-    body: SmallVec<[(usize, usize); GRID_SIZE]>,
+    body: SmallVec<[(usize, usize); 128]>,
     direction: (i32, i32),
     next_direction: (i32, i32),
     player: Player,
