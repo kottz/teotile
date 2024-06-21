@@ -4,6 +4,7 @@ members = [
     "engine",
     "tui",
     "embedded",
+    "web",
 ]
 default-members = [
     "tui",
