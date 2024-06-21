@@ -5,13 +5,13 @@ use anyhow::Result;
 use core::time::Duration;
 
 use crate::game::ConnectFour;
+use crate::game::DoodleJump;
 use crate::game::FlappyBird;
 use crate::game::GameMode;
 use crate::game::SpaceInvaders;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
-use crate::game::DoodleJump;
 
 use crate::pixel_art;
 
