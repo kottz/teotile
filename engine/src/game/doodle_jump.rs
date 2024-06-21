@@ -57,15 +57,80 @@ impl Player {
     }
 }
 
+enum PlatformType {
+    Static,
+    Moving,
+    Breaking,
+    Switching,
+}
+
 struct Platform {
-    x: usize,
-    y: usize,
+    x: f64,
+    y: f64,
     width: usize,
+    platform_type: PlatformType,
+    color: RGB,
+    state: PlatformState,
+}
+
+struct PlatformState {
+    direction: f64,
+    broken: bool,
+    switch_timer: f64,
 }
 
 impl Platform {
-    fn new(x: usize, y: usize, width: usize) -> Self {
-        Self { x, y, width }
+    fn new(x: f64, y: f64, width: usize, platform_type: PlatformType) -> Self {
+        let color = match platform_type {
+            PlatformType::Static => RGB::new(0, 255, 0),
+            PlatformType::Moving => RGB::new(0, 0, 255),
+            PlatformType::Breaking => RGB::new(255, 165, 0),
+            PlatformType::Switching => RGB::new(0, 255, 0),
+        };
+
+        Self {
+            x,
+            y,
+            width,
+            platform_type,
+            color,
+            state: PlatformState {
+                direction: 1.0,
+                broken: false,
+                switch_timer: 0.0,
+            },
+        }
+    }
+
+    fn update(&mut self, dt: f64) {
+        match self.platform_type {
+            PlatformType::Static => {}
+            PlatformType::Moving => self.update_moving(dt),
+            PlatformType::Breaking => {}
+            PlatformType::Switching => self.update_switching(dt),
+        }
+    }
+
+    fn update_moving(&mut self, dt: f64) {
+        const SPEED: f64 = 2.0;
+        self.x += self.state.direction * SPEED * dt;
+        if self.x <= 0.0 || self.x + self.width as f64 >= GRID_SIZE as f64 {
+            self.state.direction *= -1.0;
+            self.x = self.x.clamp(0.0, GRID_SIZE as f64 - self.width as f64);
+        }
+    }
+
+    fn update_switching(&mut self, dt: f64) {
+        const SWITCH_INTERVAL: f64 = 1.0;
+        self.state.switch_timer += dt;
+        if self.state.switch_timer >= SWITCH_INTERVAL {
+            self.state.switch_timer = 0.0;
+            self.color = if self.color.g == 255 {
+                RGB::new(255, 0, 0)
+            } else {
+                RGB::new(0, 255, 0)
+            };
+        }
     }
 }
 
@@ -87,14 +152,11 @@ pub struct DoodleJump {
 impl DoodleJump {
     pub fn new(seed: u64) -> Self {
         let rng = SmallRng::seed_from_u64(seed);
-        let initial_platform = Platform::new(GRID_SIZE / 2, 1, 3);
+        let initial_platform = Platform::new(GRID_SIZE as f64 / 2.0, 1.0, 3, PlatformType::Static);
 
         let mut game = Self {
             state: GameState::Playing,
-            player: Player::new(
-                initial_platform.x as f64 + 1.0,
-                initial_platform.y as f64 + 1.0,
-            ),
+            player: Player::new(initial_platform.x + 1.0, initial_platform.y + 1.0),
             platforms: SmallVec::new(),
             current_time: Duration::ZERO,
             rng,
@@ -109,40 +171,71 @@ impl DoodleJump {
 
     fn initialize_platforms(&mut self) {
         for y in (3..GRID_SIZE * 2).step_by(2) {
-            let x = self.rng.gen_range(0..GRID_SIZE);
+            let platform_type = self.random_platform_type();
             let width = self.rng.gen_range(3..6);
-            self.platforms.push(Platform::new(x, y, width));
+            let max_x = GRID_SIZE as f64 - width as f64;
+            let x = self.rng.gen_range(0.0..=max_x);
+            self.platforms
+                .push(Platform::new(x, y as f64, width, platform_type));
         }
     }
 
     fn generate_platform(&mut self) {
-        let x = self.rng.gen_range(0..GRID_SIZE);
-        let y = self.platforms.last().map_or(GRID_SIZE * 2, |p| p.y + 2);
+        let y = self
+            .platforms
+            .last()
+            .map_or(GRID_SIZE as f64 * 2.0, |p| p.y + 2.0);
+        let platform_type = self.random_platform_type();
         let width = self.rng.gen_range(3..6);
-        self.platforms.push(Platform::new(x, y, width));
+
+        let max_x = GRID_SIZE as f64 - width as f64;
+        let x = self.rng.gen_range(0.0..=max_x);
+
+        self.platforms
+            .push(Platform::new(x, y, width, platform_type));
+    }
+
+    fn random_platform_type(&mut self) -> PlatformType {
+        match self.rng.gen_range(0..10) {
+            0..=5 => PlatformType::Static,
+            6..=7 => PlatformType::Moving,
+            8 => PlatformType::Breaking,
+            _ => PlatformType::Switching,
+        }
     }
 
     fn check_and_handle_collision(&mut self) -> bool {
         let player_bottom = self.player.y;
         let player_top = self.player.y + 1.0;
-        let player_x = self.player.x;
+        let player_col = self.player.col();
 
-        for platform in &self.platforms {
-            let platform_top = platform.y as f64 + 1.0;
-            let platform_left = platform.x as f64;
-            let platform_right = (platform.x + platform.width) as f64;
+        for platform in &mut self.platforms {
+            let platform_top = platform.y + 1.0;
+            let start_col = libm::floor(platform.x) as usize % GRID_SIZE;
 
-            let horizontal_collision = (player_x >= platform_left && player_x < platform_right)
-                || ((player_x + GRID_SIZE as f64) >= platform_left
-                    && (player_x + GRID_SIZE as f64) < platform_right);
+            let horizontal_collision = (0..platform.width).any(|i| {
+                let platform_col = (start_col + i) % GRID_SIZE;
+                platform_col == player_col
+            });
 
-            if horizontal_collision
-                && player_bottom <= platform_top
-                && player_top > platform_top
-                && self.player.velocity_y < 0.0
-            {
+            let vertical_collision = player_bottom <= platform_top && player_top > platform_top;
+
+            if horizontal_collision && vertical_collision && self.player.velocity_y < 0.0 {
                 self.player.y = platform_top;
                 self.player.bounce();
+
+                match platform.platform_type {
+                    PlatformType::Breaking => {
+                        platform.state.broken = true;
+                    }
+                    PlatformType::Switching => {
+                        if platform.color.g != 255 {
+                            continue; // fall through if red
+                        }
+                    }
+                    _ => {}
+                }
+
                 return true;
             }
         }
@@ -152,11 +245,8 @@ impl DoodleJump {
     fn reset_game(&mut self) {
         self.state = GameState::Playing;
         self.platforms.clear();
-        let initial_platform = Platform::new(GRID_SIZE / 2, 1, 3);
-        self.player = Player::new(
-            initial_platform.x as f64 + 1.0,
-            initial_platform.y as f64 + 1.0,
-        );
+        let initial_platform = Platform::new(GRID_SIZE as f64 / 2.0, 1.0, 3, PlatformType::Static);
+        self.player = Player::new(initial_platform.x + 1.0, initial_platform.y + 1.0);
         self.platforms.push(initial_platform);
         self.score = 0;
         self.camera_offset = 0;
@@ -189,6 +279,10 @@ impl Game for DoodleJump {
             GameState::Playing => {
                 self.player.velocity_y += GRAVITY * dt * SPEED_MULTIPLIER;
 
+                for platform in &mut self.platforms {
+                    platform.update(dt);
+                }
+
                 if !self.check_and_handle_collision() {
                     self.player.update_position(dt);
 
@@ -204,12 +298,13 @@ impl Game for DoodleJump {
                     self.camera_offset = new_offset;
                 }
 
-                self.platforms.retain(|p| p.y >= self.camera_offset);
+                self.platforms
+                    .retain(|p| p.y >= self.camera_offset as f64 && !p.state.broken);
 
                 while self
                     .platforms
                     .last()
-                    .map_or(true, |p| p.y < self.camera_offset + GRID_SIZE * 2)
+                    .map_or(true, |p| p.y < (self.camera_offset + GRID_SIZE * 2) as f64)
                 {
                     self.generate_platform();
                 }
@@ -225,16 +320,18 @@ impl Game for DoodleJump {
         let mut render_board = RenderBoard::new();
 
         for platform in &self.platforms {
-            if platform.y >= self.camera_offset && platform.y < self.camera_offset + GRID_SIZE {
+            if platform.y >= self.camera_offset as f64
+                && platform.y < (self.camera_offset + GRID_SIZE) as f64
+            {
                 let platform_color = match &self.state {
-                    GameState::Playing => RGB::new(0, 255, 0),
+                    GameState::Playing => platform.color,
                     GameState::GameOver(animation) => animation.get_color(),
                 };
 
-                for x in platform.x..platform.x + platform.width {
+                for x in platform.x as usize..(platform.x + platform.width as f64) as usize {
                     render_board.set(
                         x % GRID_SIZE,
-                        platform.y - self.camera_offset,
+                        (platform.y - self.camera_offset as f64) as usize,
                         platform_color,
                     );
                 }
