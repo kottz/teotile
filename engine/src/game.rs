@@ -8,6 +8,7 @@ mod menu;
 mod snake;
 mod space_invaders;
 mod tictactoe;
+mod doodle_jump;
 
 use connect_four::ConnectFour;
 use flappy_bird::FlappyBird;
@@ -16,6 +17,7 @@ use menu::Menu;
 use snake::{SnakeGame, SnakeGameMode};
 use space_invaders::SpaceInvaders;
 use tictactoe::TicTacToe;
+use doodle_jump::DoodleJump;
 
 pub const GRID_SIZE: usize = 12;
 
