@@ -332,8 +332,8 @@ impl Game for SpaceInvaders {
                     }
                 }
 
-                for (i, spaceship) in self.spaceships.iter().enumerate() {
-                    let color = if i == 0 {
+                for spaceship in self.spaceships.iter() {
+                    let color = if spaceship.player == Player::Player1 {
                         RGB::new(0, 255, 0)
                     } else {
                         RGB::new(0, 255, 255)
