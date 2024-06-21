@@ -1,0 +1,104 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+.container {
+    text-align: center;
+}
+canvas {
+    border: 2px solid #333;
+}
+.controls {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+.player {
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.mobile-gamepad {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.directional-pad {
+    position: relative;
+    width: 180px;
+    height: 180px;
+}
+
+.directional-pad .gamepad-btn {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+}
+
+.directional-pad .up {
+    top: 0;
+    left: 60px;
+}
+
+.directional-pad .left {
+    top: 60px;
+    left: 0;
+}
+
+.directional-pad .right {
+    top: 60px;
+    right: 0;
+}
+
+.directional-pad .down {
+    bottom: 0;
+    left: 60px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+.gamepad-btn {
+    width: 80px;
+    height: 80px;
+    margin: 5px;
+    font-size: 16px;
+    border: none;
+    border-radius: 50%;
+    background-color: #333;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-gamepad {
+        display: flex;
+    }
+    .controls {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .mobile-gamepad {
+        display: flex;
+    }
+    .controls {
+        display: none;
+    }
+}
