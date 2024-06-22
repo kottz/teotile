@@ -1,11 +1,10 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
+use crate::game::{ButtonState, CommandType, Game, GameCommand};
 use crate::RenderBoard;
 use crate::RGB;
 use anyhow::Result;
 use core::time::Duration;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
-use smallvec::SmallVec;
 
 const GRID_WIDTH: usize = 12;
 const GRID_HEIGHT: usize = 12;
@@ -75,6 +74,44 @@ impl Tetrimino {
     fn rotate_clockwise(&mut self) {
         self.rotation = (self.rotation + 1) % 4;
     }
+
+    fn try_rotate_clockwise(&mut self, grid: &[[Option<RGB>; GRID_WIDTH]; GRID_HEIGHT]) -> bool {
+        let original_rotation = self.rotation;
+        let original_position = self.position;
+
+        self.rotate_clockwise();
+
+        if self.is_valid_position(grid) {
+            return true;
+        }
+
+        // Try wall kicks
+        let kicks = [(0, 0), (-1, 0), (1, 0), (0, 1), (-1, 1), (1, 1)];
+        for &(dx, dy) in &kicks {
+            self.position.0 += dx;
+            self.position.1 += dy;
+            if self.is_valid_position(grid) {
+                return true;
+            }
+            self.position.0 -= dx;
+            self.position.1 -= dy;
+        }
+
+        // If no valid position found, revert rotation
+        self.rotation = original_rotation;
+        self.position = original_position;
+        false
+    }
+
+    fn is_valid_position(&self, grid: &[[Option<RGB>; GRID_WIDTH]; GRID_HEIGHT]) -> bool {
+        self.get_blocks().iter().all(|&(x, y)| {
+            x >= 0
+                && x < GRID_WIDTH as i32
+                && y >= 0
+                && y < GRID_HEIGHT as i32
+                && grid[y as usize][x as usize].is_none()
+        })
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -122,16 +159,6 @@ impl TetrisGame {
             6 => TetriminoType::L,
             _ => unreachable!(),
         }
-    }
-
-    fn is_valid_position(&self, tetrimino: &Tetrimino) -> bool {
-        tetrimino.get_blocks().iter().all(|&(x, y)| {
-            x >= 0
-                && x < GRID_WIDTH as i32
-                && y >= 0
-                && y < GRID_HEIGHT as i32
-                && self.grid[y as usize][x as usize].is_none()
-        })
     }
 
     fn lock_tetrimino(&mut self) {
@@ -184,32 +211,41 @@ impl TetrisGame {
             self.state = GameState::GameOver;
         }
     }
+
+    fn move_tetrimino(&mut self, dx: i32, dy: i32) {
+        let mut new_tetrimino = self.current_tetrimino.clone();
+        new_tetrimino.move_by(dx, dy);
+        if self.is_valid_position(&new_tetrimino) {
+            self.current_tetrimino = new_tetrimino;
+        }
+    }
+
+    fn hard_drop(&mut self) {
+        while self.is_valid_position(&self.current_tetrimino) {
+            self.current_tetrimino.move_by(0, -1);
+        }
+        self.current_tetrimino.move_by(0, 1);
+        self.lock_tetrimino();
+    }
+
+    fn is_valid_position(&self, tetrimino: &Tetrimino) -> bool {
+        tetrimino.is_valid_position(&self.grid)
+    }
 }
 
 impl Game for TetrisGame {
     fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
         if let GameState::Playing = self.state {
             if let ButtonState::Pressed = input_command.button_state {
-                let mut new_tetrimino = self.current_tetrimino.clone();
                 match input_command.command_type {
-                    CommandType::Left => new_tetrimino.move_by(-1, 0),
-                    CommandType::Right => new_tetrimino.move_by(1, 0),
-                    CommandType::Up => new_tetrimino.move_by(0, -1),
-                    CommandType::Down => new_tetrimino.rotate_clockwise(),
-                    CommandType::Select => {
-                        while self.is_valid_position(&new_tetrimino) {
-                            new_tetrimino.move_by(0, -1);
-                        }
-                        new_tetrimino.move_by(0, 1);
-                        self.current_tetrimino = new_tetrimino;
-                        self.lock_tetrimino();
-                        return Ok(());
+                    CommandType::Left => self.move_tetrimino(-1, 0),
+                    CommandType::Right => self.move_tetrimino(1, 0),
+                    CommandType::Up => self.move_tetrimino(0, -1),
+                    CommandType::Down => {
+                        self.current_tetrimino.try_rotate_clockwise(&self.grid);
                     }
-                    _ => return Ok(()),
-                }
-
-                if self.is_valid_position(&new_tetrimino) {
-                    self.current_tetrimino = new_tetrimino;
+                    CommandType::Select => self.hard_drop(),
+                    _ => {}
                 }
             }
         } else if let (ButtonState::Pressed, CommandType::Select) =
@@ -248,7 +284,6 @@ impl Game for TetrisGame {
     fn render(&self) -> Result<RenderBoard> {
         let mut render_board = RenderBoard::new();
 
-        // Render the grid
         for y in 0..GRID_HEIGHT {
             for x in 0..GRID_WIDTH {
                 if let Some(color) = self.grid[y][x] {
@@ -257,7 +292,6 @@ impl Game for TetrisGame {
             }
         }
 
-        // Render the current tetrimino
         if let GameState::Playing = self.state {
             let color = match self.current_tetrimino.tetrimino_type {
                 TetriminoType::I => RGB::new(0, 255, 255),
@@ -276,7 +310,6 @@ impl Game for TetrisGame {
             }
         }
 
-        // Render game over animation
         if let GameState::GameOver = self.state {
             let game_over_color = self.game_over_animation.get_color();
             for y in 0..GRID_HEIGHT {
