@@ -240,11 +240,11 @@ impl Game for TetrisGame {
                 match input_command.command_type {
                     CommandType::Left => self.move_tetrimino(-1, 0),
                     CommandType::Right => self.move_tetrimino(1, 0),
-                    CommandType::Up => self.move_tetrimino(0, -1),
-                    CommandType::Down => {
+                    CommandType::Up => self.hard_drop(),
+                    CommandType::Down => self.move_tetrimino(0, -1),
+                    CommandType::Select => {
                         self.current_tetrimino.try_rotate_clockwise(&self.grid);
                     }
-                    CommandType::Select => self.hard_drop(),
                     _ => {}
                 }
             }
