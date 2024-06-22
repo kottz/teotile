@@ -8,8 +8,8 @@ mod maze;
 mod menu;
 mod snake;
 mod space_invaders;
-mod tictactoe;
 mod tetris;
+mod tictactoe;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
@@ -18,8 +18,8 @@ use maze::{MazeGame, MazeGameMode};
 use menu::Menu;
 use snake::{SnakeGame, SnakeGameMode};
 use space_invaders::SpaceInvaders;
-use tictactoe::TicTacToe;
 use tetris::TetrisGame;
+use tictactoe::TicTacToe;
 
 pub const GRID_SIZE: usize = 12;
 
