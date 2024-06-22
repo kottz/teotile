@@ -9,10 +9,10 @@ use crate::game::DoodleJump;
 use crate::game::FlappyBird;
 use crate::game::GameMode;
 use crate::game::SpaceInvaders;
+use crate::game::TetrisGame;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
-use crate::game::TetrisGame;
 
 use crate::pixel_art;
 
@@ -94,7 +94,7 @@ impl GameTypeInfo {
             GameTypeInfo::SpaceInvaders => pixel_art::SPACE_INVADERS,
             GameTypeInfo::SpaceInvadersMultiPlayer => pixel_art::SPACE_INVADERS_MULTIPLAYER,
             GameTypeInfo::DoodleJump => pixel_art::DOODLE_JUMP,
-            GameTypeInfo::Tetris => pixel_art::DOODLE_JUMP,
+            GameTypeInfo::Tetris => pixel_art::TETRIS,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
