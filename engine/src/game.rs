@@ -9,6 +9,7 @@ mod menu;
 mod snake;
 mod space_invaders;
 mod tictactoe;
+mod tetris;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
@@ -18,6 +19,7 @@ use menu::Menu;
 use snake::{SnakeGame, SnakeGameMode};
 use space_invaders::SpaceInvaders;
 use tictactoe::TicTacToe;
+use tetris::TetrisGame;
 
 pub const GRID_SIZE: usize = 12;
 
