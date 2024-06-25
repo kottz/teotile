@@ -1,33 +1,53 @@
-use gilrs::{Button, Event, Gilrs, EventType};
+use gilrs::{Button, Event, EventType, Gilrs};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 
-pub fn create_gamepad() {
-    let mut gilrs = Gilrs::new().unwrap();
+pub enum GamepadEvent {
+    DPadUp,
+    DPadDown,
+    DPadLeft,
+    DPadRight,
+    South,
+    East,
+}
 
-    // Iterate over all connected gamepads
-    for (_id, gamepad) in gilrs.gamepads() {
-        println!("{} is {:?}", gamepad.name(), gamepad.power_info());
+pub struct GamepadHandler {
+    event_receiver: Receiver<GamepadEvent>,
+}
+
+impl GamepadHandler {
+    pub fn new() -> Self {
+        let (sender, receiver) = channel();
+        thread::spawn(move || {
+            run_gamepad_loop(sender);
+        });
+        GamepadHandler {
+            event_receiver: receiver,
+        }
     }
 
-    let mut active_gamepad = None;
+    pub fn poll_event(&self) -> Option<GamepadEvent> {
+        self.event_receiver.try_recv().ok()
+    }
+}
+
+fn run_gamepad_loop(sender: Sender<GamepadEvent>) {
+    let mut gilrs = Gilrs::new().unwrap();
 
     loop {
-        // Examine new events
-        while let Some(Event { id, event, time }) = gilrs.next_event() {
+        while let Some(Event { event, .. }) = gilrs.next_event() {
             match event {
-                EventType::ButtonPressed(Button::DPadDown, _) => {
-                    println!("{:?} New event from {}: Button South is pressed", time, id);
-                }
-                _ => (),
+                EventType::ButtonPressed(button, _) => match button {
+                    Button::DPadUp => sender.send(GamepadEvent::DPadUp).unwrap(),
+                    Button::DPadDown => sender.send(GamepadEvent::DPadDown).unwrap(),
+                    Button::DPadLeft => sender.send(GamepadEvent::DPadLeft).unwrap(),
+                    Button::DPadRight => sender.send(GamepadEvent::DPadRight).unwrap(),
+                    Button::South => sender.send(GamepadEvent::South).unwrap(),
+                    Button::East => sender.send(GamepadEvent::East).unwrap(),
+                    _ => continue,
+                },
+                _ => continue,
             }
-            //println!("{:?} New event from {}: {:?}", time, id, event);
-            active_gamepad = Some(id);
         }
-
-        // You can also use cached gamepad state
-        // if let Some(gamepad) = active_gamepad.map(|id| gilrs.gamepad(id)) {
-        //     if gamepad.is_pressed(Button::South) {
-        //         println!("Button South is pressed (XBox - A, PS - X)");
-        //     }
-        // }
     }
 }
