@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+clap = { version = "4.5.7", features = ["derive"] }
 gilrs = "0.10.7"
 rppal = "0.18.0"
 rs_ws281x = "0.5.1"
+signal-hook = "0.3.17"
 teotile = { path = "../engine" }

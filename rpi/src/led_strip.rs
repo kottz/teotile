@@ -1,6 +1,7 @@
 use crate::output::Output;
 use anyhow::{Context, Result};
 use rs_ws281x::{ChannelBuilder, Controller, ControllerBuilder, StripType};
+use std::any::Any;
 use teotile::RGB;
 
 pub struct LedStrip {
@@ -24,33 +25,42 @@ impl LedStrip {
             )
             .build()
             .context("Failed to initialize LED strip controller")?;
-
         Ok(Self {
             controller,
             led_count: led_count as usize,
         })
+    }
+
+    pub fn cleanup(&mut self) -> Result<()> {
+        let leds = self.controller.leds_mut(0);
+        for led in leds.iter_mut() {
+            *led = [0, 0, 0, 0];
+        }
+        self.controller
+            .render()
+            .context("Failed to clear LED strip during cleanup")
     }
 }
 
 impl Output for LedStrip {
     fn render(&mut self, render_board: &teotile::RenderBoard) -> Result<()> {
         let leds = self.controller.leds_mut(0);
-
         for (i, led) in leds.iter_mut().enumerate() {
             if i >= self.led_count {
                 break;
             }
-
             let row = i / 12;
             let col = if row % 2 == 0 { i % 12 } else { 11 - (i % 12) };
-
             let color: RGB = render_board.get(col, row);
             *led = [color.b, color.g, color.r, 0];
         }
-
         self.controller
             .render()
             .context("Failed to render LED strip")?;
         Ok(())
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

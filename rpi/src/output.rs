@@ -1,8 +1,10 @@
 use anyhow::Result;
+use std::any::Any;
 use teotile::RenderBoard;
 
-pub trait Output {
+pub trait Output: Any {
     fn render(&mut self, render_board: &RenderBoard) -> Result<()>;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 pub struct DebugOutput;
@@ -18,5 +20,9 @@ impl Output for DebugOutput {
         }
         println!();
         Ok(())
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
