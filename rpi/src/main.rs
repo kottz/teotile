@@ -14,7 +14,7 @@ const LED_COUNT: i32 = 144; // 12x12 grid
 const LED_PIN: i32 = 10; // GPIO pin number
 
 // Set this to true to use LED strip output, false to use debug output
-const USE_LED_STRIP: bool = false;
+const USE_LED_STRIP: bool = true;
 
 fn main() -> Result<()> {
     let mut engine = GameEngine::default();

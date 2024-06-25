@@ -44,8 +44,8 @@ impl Output for LedStrip {
             let row = i / 12;
             let col = if row % 2 == 0 { i % 12 } else { 11 - (i % 12) };
 
-            let color: RGB = render_board.get(row, col);
-            *led = [color.r, color.g, color.b, 0];
+            let color: RGB = render_board.get(col, row);
+            *led = [color.b, color.g, color.r, 0];
         }
 
         self.controller
