@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+gilrs = "0.10.7"
+rppal = "0.18.0"
 rs_ws281x = "0.5.1"
