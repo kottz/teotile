@@ -257,7 +257,7 @@ impl Game for Menu {
                     let rgb = if i == self.active_game_index {
                         RGB::new(255, 255, 255)
                     } else {
-                        RGB::new(100, 100, 100)
+                        RGB::new(20, 20, 20)
                     };
                     render_board.set(i % GRID_SIZE, i / GRID_SIZE, rgb);
                 }
