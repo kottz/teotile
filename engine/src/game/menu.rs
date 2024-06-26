@@ -13,12 +13,13 @@ use crate::game::TetrisGame;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
+use crate::game::MultiplayerShooter;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 12;
+const NUM_GAMES: usize = 13;
 
 enum MenuState {
     Selecting,
@@ -76,6 +77,7 @@ define_game_type_and_impl!(
     SpaceInvadersMultiPlayer(SpaceInvaders),
     DoodleJump(DoodleJump),
     Tetris(TetrisGame),
+    MultiplayerShooter(MultiplayerShooter),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -95,6 +97,7 @@ impl GameTypeInfo {
             GameTypeInfo::SpaceInvadersMultiPlayer => pixel_art::SPACE_INVADERS_MULTIPLAYER,
             GameTypeInfo::DoodleJump => pixel_art::DOODLE_JUMP,
             GameTypeInfo::Tetris => pixel_art::TETRIS,
+            GameTypeInfo::MultiplayerShooter => pixel_art::SPACE_INVADERS,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -153,6 +156,7 @@ impl Menu {
             9 => GameTypeInfo::SpaceInvadersMultiPlayer,
             10 => GameTypeInfo::DoodleJump,
             11 => GameTypeInfo::Tetris,
+            12 => GameTypeInfo::MultiplayerShooter,
             _ => unreachable!(),
         }
     }
@@ -189,6 +193,7 @@ impl Menu {
             }
             GameTypeInfo::DoodleJump => GameType::DoodleJump(DoodleJump::new(seed)),
             GameTypeInfo::Tetris => GameType::Tetris(TetrisGame::new(seed)),
+            GameTypeInfo::MultiplayerShooter => GameType::MultiplayerShooter(MultiplayerShooter::new(seed)),
         };
         self.state = MenuState::RunningGame(game);
     }

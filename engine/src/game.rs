@@ -10,6 +10,7 @@ mod snake;
 mod space_invaders;
 mod tetris;
 mod tictactoe;
+mod shooter;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
@@ -20,6 +21,7 @@ use snake::{SnakeGame, SnakeGameMode};
 use space_invaders::SpaceInvaders;
 use tetris::TetrisGame;
 use tictactoe::TicTacToe;
+use shooter::MultiplayerShooter;
 
 pub const GRID_SIZE: usize = 12;
 
