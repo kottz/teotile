@@ -8,7 +8,5 @@
   ],
   "module": "teotile_web.js",
   "types": "teotile_web.d.ts",
-  "sideEffects": [
-    "./snippets/*"
-  ]
+  "sideEffects": false
 }
