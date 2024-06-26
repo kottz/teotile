@@ -97,7 +97,7 @@ impl GameTypeInfo {
             GameTypeInfo::SpaceInvadersMultiPlayer => pixel_art::SPACE_INVADERS_MULTIPLAYER,
             GameTypeInfo::DoodleJump => pixel_art::DOODLE_JUMP,
             GameTypeInfo::Tetris => pixel_art::TETRIS,
-            GameTypeInfo::MultiplayerShooter => pixel_art::SPACE_INVADERS,
+            GameTypeInfo::MultiplayerShooter => pixel_art::SHOOTER,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
