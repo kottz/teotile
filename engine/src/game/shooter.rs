@@ -12,6 +12,7 @@ const GRID_SIZE: usize = 12;
 const MAX_PLAYERS: usize = 2;
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 const WALL_SPAWN_INTERVAL: f64 = 0.5; // Wall spawn interval in seconds
+const MAX_WALLS: usize = 32;
 
 #[derive(Debug, PartialEq)]
 enum GameState {
@@ -67,7 +68,7 @@ pub struct MultiplayerShooter {
     state: GameState,
     characters: SmallVec<[Character; MAX_PLAYERS]>,
     projectiles: SmallVec<[Projectile; 128]>,
-    walls: SmallVec<[(usize, usize); 32]>,
+    walls: SmallVec<[(usize, usize); MAX_WALLS]>,
     current_time: Duration,
     wall_spawn_timer: f64,
     game_over_animation: Animation,
@@ -75,21 +76,27 @@ pub struct MultiplayerShooter {
 }
 
 impl MultiplayerShooter {
-    pub fn new(seed: u64) -> Self {
-        let mut characters = SmallVec::new();
-        characters.push(Character::new(Player::Player1));
-        characters.push(Character::new(Player::Player2));
-
-        Self {
+    pub fn new(seed: u64, initial_walls: usize) -> Self {
+        let mut game = Self {
             state: GameState::Playing,
-            characters,
+            characters: SmallVec::new(),
             projectiles: SmallVec::with_capacity(128),
-            walls: SmallVec::with_capacity(32),
+            walls: SmallVec::with_capacity(MAX_WALLS),
             current_time: Duration::default(),
             wall_spawn_timer: 0.0,
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
             rng: SmallRng::seed_from_u64(seed),
+        };
+
+        game.characters.push(Character::new(Player::Player1));
+        game.characters.push(Character::new(Player::Player2));
+
+        // Spawn initial walls
+        for _ in 0..initial_walls.min(MAX_WALLS) {
+            game.spawn_wall();
         }
+
+        game
     }
 
     fn move_character(&mut self, direction: isize, player: Player) {
@@ -135,7 +142,7 @@ impl MultiplayerShooter {
     }
 
     fn spawn_wall(&mut self) {
-        if self.walls.len() < 32 {
+        if self.walls.len() < MAX_WALLS {
             let row = self.rng.gen_range(1..GRID_SIZE - 1);
             let col = self.rng.gen_range(0..GRID_SIZE);
             if !self.walls.contains(&(row, col)) {
@@ -195,7 +202,7 @@ impl Game for MultiplayerShooter {
                 if let (ButtonState::Pressed, CommandType::Select) =
                     (input_command.button_state, input_command.command_type)
                 {
-                    *self = Self::new(self.rng.next_u64());
+                    *self = Self::new(self.rng.next_u64(), self.walls.len());
                 }
             }
         }

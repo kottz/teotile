@@ -193,7 +193,7 @@ impl Menu {
             }
             GameTypeInfo::DoodleJump => GameType::DoodleJump(DoodleJump::new(seed)),
             GameTypeInfo::Tetris => GameType::Tetris(TetrisGame::new(seed)),
-            GameTypeInfo::MultiplayerShooter => GameType::MultiplayerShooter(MultiplayerShooter::new(seed)),
+            GameTypeInfo::MultiplayerShooter => GameType::MultiplayerShooter(MultiplayerShooter::new(seed, 10)),
         };
         self.state = MenuState::RunningGame(game);
     }
