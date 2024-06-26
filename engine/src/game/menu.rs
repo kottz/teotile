@@ -100,7 +100,7 @@ impl GameTypeInfo {
             GameTypeInfo::DoodleJump => pixel_art::DOODLE_JUMP,
             GameTypeInfo::Tetris => pixel_art::TETRIS,
             GameTypeInfo::MultiplayerShooter => pixel_art::SHOOTER,
-            GameTypeInfo::PongGame => pixel_art::SHOOTER,
+            GameTypeInfo::PongGame => pixel_art::PONG,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
