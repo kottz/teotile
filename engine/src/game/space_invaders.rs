@@ -14,12 +14,6 @@ const GRID_SIZE: usize = 12;
 const MAX_PLAYERS: usize = 2;
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 
-// #[derive(Debug, Clone, Copy, PartialEq)]
-// pub enum SpaceInvadersMode {
-//     SinglePlayer,
-//     MultiPlayer,
-// }
-
 #[derive(Debug, PartialEq)]
 enum GameState {
     Playing,
