@@ -11,6 +11,7 @@ mod space_invaders;
 mod tetris;
 mod tictactoe;
 mod shooter;
+mod pong;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
@@ -22,6 +23,7 @@ use space_invaders::SpaceInvaders;
 use tetris::TetrisGame;
 use tictactoe::TicTacToe;
 use shooter::MultiplayerShooter;
+use pong::PongGame;
 
 pub const GRID_SIZE: usize = 12;
 
