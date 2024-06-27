@@ -69,9 +69,7 @@ fn main() -> Result<()> {
                 }
                 _ => {
                     if let Some(command) = gamepad_event_to_command(event) {
-                        engine
-                            .process_input(command)
-                            .context("Failed to process input")?;
+                        engine.process_input(command);
                     }
                 }
             }
@@ -83,15 +81,11 @@ fn main() -> Result<()> {
         prev_instant = current_instant;
 
         // Update game state
-        engine
-            .update(delta)
-            .context("Failed to update game state")?;
+        engine.update(delta);
 
         // Render to output
-        let render_board = engine.render().context("Failed to render game state")?;
-        output
-            .render(&render_board)
-            .context("Failed to render to output")?;
+        let render_board = engine.render().unwrap();
+        output.render(&render_board);
 
         // Calculate how long to sleep to maintain target FPS
         let elapsed = loop_start.elapsed();
