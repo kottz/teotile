@@ -4,7 +4,7 @@ use crate::{
 
 use core::time::Duration;
 use libm::sqrt;
-use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
+use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
@@ -50,7 +50,7 @@ impl MazeBoard {
         if GRID_SIZE % 2 == 0 {
             size += 1;
         }
-        let mut rng = SmallRng::seed_from_u64(seed);
+        let mut rng = CustomRng::seed_from_u64(seed);
         let start_pos = (1, 1);
         tiles[start_pos.1 as usize][start_pos.0 as usize] = MazeTile::Empty;
         let mut directions: [(isize, isize); 4] = [(-2, 0), (2, 0), (0, -2), (0, 2)];
@@ -60,7 +60,7 @@ impl MazeBoard {
 
         while !stack.is_empty() {
             let (x, y) = stack.last().unwrap();
-            directions.shuffle(&mut rng);
+            rng.shuffle(&mut directions);
 
             let mut moved = false;
             for (dx, dy) in directions.iter() {

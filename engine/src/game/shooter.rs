@@ -3,8 +3,7 @@ use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
 use crate::{GameError, RenderBoard};
 use crate::RGB;
 use core::time::Duration;
-use rand::RngCore;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
@@ -71,7 +70,7 @@ pub struct MultiplayerShooter {
     current_time: Duration,
     wall_spawn_timer: f64,
     game_over_animation: Animation,
-    rng: SmallRng,
+    rng: CustomRng,
 }
 
 impl MultiplayerShooter {
@@ -84,7 +83,7 @@ impl MultiplayerShooter {
             current_time: Duration::default(),
             wall_spawn_timer: 0.0,
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
-            rng: SmallRng::seed_from_u64(seed),
+            rng: CustomRng::seed_from_u64(seed),
         };
 
         game.characters.push(Character::new(Player::Player1));
@@ -142,8 +141,8 @@ impl MultiplayerShooter {
 
     fn spawn_wall(&mut self) {
         if self.walls.len() < MAX_WALLS {
-            let row = self.rng.gen_range(1..GRID_SIZE - 1);
-            let col = self.rng.gen_range(0..GRID_SIZE);
+            let row = self.rng.gen_range(1, (GRID_SIZE - 1) as u32) as usize;
+            let col = self.rng.gen_range(0, GRID_SIZE as u32) as usize;
             if !self.walls.contains(&(row, col)) {
                 self.walls.push((row, col));
             }

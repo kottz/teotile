@@ -1,9 +1,10 @@
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand};
-use crate::{GameError, RenderBoard};
 use crate::RGB;
+use crate::{GameError, RenderBoard};
 use core::time::Duration;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+//use rand::{rngs::SmallRng, Rng, SeedableRng};
+use crate::random::CustomRng;
 
 const GRID_WIDTH: usize = 12;
 const GRID_HEIGHT: usize = 12;
@@ -127,13 +128,13 @@ pub struct TetrisGame {
     current_time: Duration,
     last_update_time: Duration,
     game_over_animation: Animation,
-    rng: SmallRng,
+    rng: CustomRng,
     score: usize,
 }
 
 impl TetrisGame {
     pub fn new(seed: u64) -> Self {
-        let mut rng = SmallRng::seed_from_u64(seed);
+        let mut rng = CustomRng::seed_from_u64(seed);
         Self {
             state: GameState::Playing,
             grid: [[None; GRID_WIDTH]; GRID_HEIGHT],
@@ -147,8 +148,8 @@ impl TetrisGame {
         }
     }
 
-    fn random_tetrimino(rng: &mut SmallRng) -> TetriminoType {
-        match rng.gen_range(0..7) {
+    fn random_tetrimino(rng: &mut CustomRng) -> TetriminoType {
+        match rng.gen_range(0, 7) {
             0 => TetriminoType::I,
             1 => TetriminoType::O,
             2 => TetriminoType::T,
@@ -250,7 +251,7 @@ impl Game for TetrisGame {
         } else if let (ButtonState::Pressed, CommandType::Select) =
             (input_command.button_state, input_command.command_type)
         {
-            *self = TetrisGame::new(self.rng.gen());
+            *self = TetrisGame::new(self.rng.next_u64());
         }
         Ok(())
     }

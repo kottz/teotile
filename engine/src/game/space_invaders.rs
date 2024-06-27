@@ -3,8 +3,7 @@ use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
 use crate::{GameError, RenderBoard};
 use crate::RGB;
 use core::time::Duration;
-use rand::RngCore;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 use super::GameMode;
@@ -69,7 +68,7 @@ pub struct SpaceInvaders {
     game_over_animation: Animation,
     walls: Option<SmallVec<[(usize, usize); 32]>>,
     difficulty: u8,
-    rng: SmallRng,
+    rng: CustomRng,
 }
 
 impl SpaceInvaders {
@@ -112,7 +111,7 @@ impl SpaceInvaders {
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
             walls,
             difficulty: difficulty.clamp(1, 5),
-            rng: SmallRng::seed_from_u64(seed),
+            rng: CustomRng::seed_from_u64(seed),
         }
     }
 

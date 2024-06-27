@@ -1,11 +1,10 @@
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
-use crate::{GameError, RenderBoard};
+use crate::random::CustomRng;
 use crate::RGB;
+use crate::{GameError, RenderBoard};
 use core::time::Duration;
 use libm::{fabsf, roundf};
-use rand::RngCore;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 const GRID_SIZE: usize = 12;
 const PLAY_AREA_HEIGHT: usize = GRID_SIZE - 1;
@@ -37,14 +36,14 @@ pub struct PongGame {
     state: GameState,
     paddles: [Paddle; 2],
     ball: Ball,
-    rng: SmallRng,
+    rng: CustomRng,
     game_over_animation: Animation,
     game_time: Duration,
 }
 
 impl PongGame {
     pub fn new(seed: u64) -> Self {
-        let mut rng = SmallRng::seed_from_u64(seed);
+        let mut rng = CustomRng::seed_from_u64(seed);
         Self {
             state: GameState::Playing,
             paddles: [
@@ -65,7 +64,7 @@ impl PongGame {
                 } else {
                     -BALL_SPEED
                 },
-                dy: rng.gen_range(-BALL_SPEED..BALL_SPEED),
+                dy: rng.gen_range_f32(-BALL_SPEED, BALL_SPEED),
             },
             rng,
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
@@ -147,7 +146,7 @@ impl PongGame {
             Player::Player1 => BALL_SPEED,
             Player::Player2 => -BALL_SPEED,
         };
-        self.ball.dy = self.rng.gen_range(-BALL_SPEED..BALL_SPEED);
+        self.ball.dy = self.rng.gen_range_f32(-BALL_SPEED, BALL_SPEED);
     }
 }
 
@@ -157,14 +156,14 @@ impl Game for PongGame {
             GameState::Playing => {
                 if let ButtonState::Pressed = input_command.button_state {
                     match (input_command.player, input_command.command_type) {
-                        (Player::Player1, CommandType::Down) => self.move_paddle(Player::Player1, -1),
-                        (Player::Player1, CommandType::Up) => {
-                            self.move_paddle(Player::Player1, 1)
+                        (Player::Player1, CommandType::Down) => {
+                            self.move_paddle(Player::Player1, -1)
                         }
-                        (Player::Player2, CommandType::Down) => self.move_paddle(Player::Player2, -1),
-                        (Player::Player2, CommandType::Up) => {
-                            self.move_paddle(Player::Player2, 1)
+                        (Player::Player1, CommandType::Up) => self.move_paddle(Player::Player1, 1),
+                        (Player::Player2, CommandType::Down) => {
+                            self.move_paddle(Player::Player2, -1)
                         }
+                        (Player::Player2, CommandType::Up) => self.move_paddle(Player::Player2, 1),
                         _ => {}
                     }
                 }

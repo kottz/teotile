@@ -3,7 +3,7 @@ use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB}
 use crate::GameError;
 
 use core::time::Duration;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
@@ -79,7 +79,7 @@ pub struct FlappyBird {
     wall_gap: usize,
     wall_period: f64,
     last_wall_time: f64,
-    rng: SmallRng,
+    rng: CustomRng,
     game_over_animation: Animation,
     score: usize,
 }
@@ -94,7 +94,7 @@ impl FlappyBird {
             wall_gap: 8,
             wall_period: 0.18,
             last_wall_time: 0.0,
-            rng: SmallRng::seed_from_u64(seed),
+            rng: CustomRng::seed_from_u64(seed),
             game_over_animation: Animation::new(GAME_OVER_ANIMATION_SPEED),
             score: 0,
         }
@@ -116,7 +116,7 @@ impl FlappyBird {
 
     fn add_wall(&mut self) {
         const GAP_SIZE: usize = 4;
-        let gap_row = self.rng.gen_range(0..=GRID_SIZE - GAP_SIZE);
+        let gap_row = self.rng.gen_range(0, (GRID_SIZE - GAP_SIZE + 1) as u32) as usize;
         self.walls.push(Wall::new(GRID_SIZE - 1, gap_row, GAP_SIZE));
     }
 

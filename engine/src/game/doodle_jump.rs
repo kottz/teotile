@@ -1,9 +1,8 @@
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
-use crate::GameError;
+use crate::{CustomRng, GameError};
 
 use core::time::Duration;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
@@ -145,14 +144,14 @@ pub struct DoodleJump {
     player: Player,
     platforms: SmallVec<[Platform; GRID_SIZE * 2]>,
     current_time: Duration,
-    rng: SmallRng,
+    rng: CustomRng,
     score: usize,
     camera_offset: usize,
 }
 
 impl DoodleJump {
     pub fn new(seed: u64) -> Self {
-        let rng = SmallRng::seed_from_u64(seed);
+        let rng = CustomRng::seed_from_u64(seed);
         let initial_platform = Platform::new(GRID_SIZE as f64 / 2.0, 1.0, 3, PlatformType::Static);
 
         let mut game = Self {
@@ -173,11 +172,11 @@ impl DoodleJump {
     fn initialize_platforms(&mut self) {
         for y in (3..GRID_SIZE * 2).step_by(2) {
             let platform_type = self.random_platform_type();
-            let width = self.rng.gen_range(3..6);
+            let width = self.rng.gen_range(3, 6);
             let max_x = GRID_SIZE as f64 - width as f64;
-            let x = self.rng.gen_range(0.0..=max_x);
+            let x = self.rng.gen_range_f64(0.0, max_x);
             self.platforms
-                .push(Platform::new(x, y as f64, width, platform_type));
+                .push(Platform::new(x, y as f64, width as usize, platform_type));
         }
     }
 
@@ -187,17 +186,17 @@ impl DoodleJump {
             .last()
             .map_or(GRID_SIZE as f64 * 2.0, |p| p.y + 2.0);
         let platform_type = self.random_platform_type();
-        let width = self.rng.gen_range(3..6);
+        let width = self.rng.gen_range(3, 6);
 
         let max_x = GRID_SIZE as f64 - width as f64;
-        let x = self.rng.gen_range(0.0..=max_x);
+        let x = self.rng.gen_range_f64(0.0, max_x);
 
         self.platforms
-            .push(Platform::new(x, y, width, platform_type));
+            .push(Platform::new(x, y, width as usize, platform_type));
     }
 
     fn random_platform_type(&mut self) -> PlatformType {
-        match self.rng.gen_range(0..10) {
+        match self.rng.gen_range(0, 10) {
             0..=5 => PlatformType::Static,
             6..=7 => PlatformType::Moving,
             8 => PlatformType::Breaking,

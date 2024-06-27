@@ -3,7 +3,7 @@ use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
 use crate::{GameError, RenderBoard};
 use crate::RGB;
 use core::time::Duration;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;
@@ -93,13 +93,13 @@ pub struct SnakeGame {
     current_time: Duration,
     last_update_time: Duration,
     game_over_animation: Animation,
-    rng: SmallRng,
+    rng: CustomRng,
     num_food: usize,
 }
 
 impl SnakeGame {
     pub fn new(seed: u64, mode: SnakeGameMode) -> Self {
-        let rng = SmallRng::seed_from_u64(seed);
+        let rng = CustomRng::seed_from_u64(seed);
         let mut snakes = SmallVec::new();
         snakes.push(Snake::new(Player::Player1, (GRID_SIZE / 4, GRID_SIZE / 2)));
 
@@ -133,8 +133,8 @@ impl SnakeGame {
 
     fn spawn_food(&mut self) {
         while self.food.len() < self.num_food {
-            let x = self.rng.gen_range(0..GRID_SIZE);
-            let y = self.rng.gen_range(0..GRID_SIZE);
+            let x = self.rng.gen_range(0, GRID_SIZE as u32) as usize;
+            let y = self.rng.gen_range(0, GRID_SIZE as u32) as usize;
 
             if !self.snakes.iter().any(|snake| snake.body.contains(&(x, y)))
                 && !self.food.contains(&(x, y))
@@ -214,7 +214,7 @@ impl Game for SnakeGame {
                 if let (ButtonState::Pressed, CommandType::Select) =
                     (input_command.button_state, input_command.command_type)
                 {
-                    *self = SnakeGame::new(self.rng.gen(), self.mode);
+                    *self = SnakeGame::new(self.rng.next_u64(), self.mode);
                 }
             }
         }
