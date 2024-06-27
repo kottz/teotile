@@ -1,5 +1,6 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
+use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
+use crate::GameError;
 
 use core::time::Duration;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -255,7 +256,7 @@ impl DoodleJump {
 }
 
 impl Game for DoodleJump {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         match (
             &mut self.state,
             input_command.button_state,
@@ -271,7 +272,7 @@ impl Game for DoodleJump {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
         let dt = delta_time.as_secs_f64();
 
@@ -316,7 +317,7 @@ impl Game for DoodleJump {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
         for platform in &self.platforms {

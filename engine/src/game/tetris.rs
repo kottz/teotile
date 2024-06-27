@@ -1,8 +1,7 @@
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand};
-use crate::RenderBoard;
+use crate::{GameError, RenderBoard};
 use crate::RGB;
-use anyhow::Result;
 use core::time::Duration;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
@@ -234,7 +233,7 @@ impl TetrisGame {
 }
 
 impl Game for TetrisGame {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         if let GameState::Playing = self.state {
             if let ButtonState::Pressed = input_command.button_state {
                 match input_command.command_type {
@@ -256,7 +255,7 @@ impl Game for TetrisGame {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
 
         match self.state {
@@ -281,7 +280,7 @@ impl Game for TetrisGame {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
         for y in 0..GRID_HEIGHT {

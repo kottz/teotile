@@ -1,7 +1,5 @@
 use crate::{
-    animation::Animation,
-    game::{CommandType, Game, GameCommand, RenderBoard, Result, RGB},
-    Player,
+    animation::Animation, game::{CommandType, Game, GameCommand, RenderBoard, RGB}, GameError, Player
 };
 
 use core::time::Duration;
@@ -140,7 +138,7 @@ impl MazeGame {
 }
 
 impl Game for MazeGame {
-    fn process_input(&mut self, input: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input: GameCommand) -> Result<(), GameError> {
         match &self.state {
             MazeGameState::Playing => {
                 let (dx, dy) = match input.command_type {
@@ -188,7 +186,7 @@ impl Game for MazeGame {
         }
         Ok(())
     }
-    fn update(&mut self, delta_time: core::time::Duration) -> Result<()> {
+    fn update(&mut self, delta_time: core::time::Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
 
         match &self.state {
@@ -200,7 +198,7 @@ impl Game for MazeGame {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
         match &self.state {
             MazeGameState::Playing => match &self.mode {

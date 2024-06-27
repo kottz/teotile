@@ -1,7 +1,6 @@
 use crate::game::{ButtonState, CommandType, Game, GameCommand};
-use crate::RenderBoard;
+use crate::{GameError, RenderBoard};
 use crate::RGB;
-use anyhow::Result;
 use core::time::Duration;
 
 use crate::game::ConnectFour;
@@ -44,19 +43,19 @@ macro_rules! define_game_type_and_impl {
         }
 
         impl Game for GameType {
-            fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+            fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
                 match self {
                     $(GameType::$variant(game) => game.process_input(input_command)),+
                 }
             }
 
-            fn update(&mut self, delta_time: Duration) -> Result<()> {
+            fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
                 match self {
                     $(GameType::$variant(game) => game.update(delta_time)),+
                 }
             }
 
-            fn render(&self) -> Result<RenderBoard> {
+            fn render(&self) -> Result<RenderBoard, GameError> {
                 match self {
                     $(GameType::$variant(game) => game.render()),+
                 }
@@ -211,7 +210,7 @@ impl Default for Menu {
 }
 
 impl Game for Menu {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         match &mut self.state {
             MenuState::Selecting => {
                 if let ButtonState::Pressed = input_command.button_state {
@@ -241,7 +240,7 @@ impl Game for Menu {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         match &mut self.state {
             MenuState::Selecting => {
                 self.current_time += delta_time;
@@ -253,7 +252,7 @@ impl Game for Menu {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
         match &self.state {
             MenuState::Selecting => {

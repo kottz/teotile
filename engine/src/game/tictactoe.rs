@@ -1,8 +1,7 @@
 use crate::animation::Animation;
 use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
-use crate::RenderBoard;
+use crate::{GameError, RenderBoard};
 use crate::RGB;
-use anyhow::Result;
 use core::time::Duration;
 use smallvec::SmallVec;
 
@@ -44,7 +43,7 @@ pub struct TicTacToe {
 }
 
 impl Game for TicTacToe {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         match &self.state {
             TicTacToeState::Playing => {
                 if input_command.player != self.active_player {
@@ -119,7 +118,7 @@ impl Game for TicTacToe {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
 
         match &self.state {
@@ -132,7 +131,7 @@ impl Game for TicTacToe {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
         // Closure to draw 'X' centered at (cx, cy)
@@ -272,9 +271,9 @@ impl TicTacToe {
         }
     }
 
-    fn _make_move(&mut self, cell: (usize, usize), player: Player) -> Result<()> {
+    fn _make_move(&mut self, cell: (usize, usize), player: Player) -> Result<(), GameError> {
         if self.board.get(cell.0, cell.1) != Cell::Empty {
-            return Err(anyhow::anyhow!("Cell is already occupied"));
+            return Err(GameError::InvalidMove);
         }
 
         self.board

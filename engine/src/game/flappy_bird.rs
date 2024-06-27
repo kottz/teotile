@@ -1,5 +1,6 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, Result, RGB};
+use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
+use crate::GameError;
 
 use core::time::Duration;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -136,7 +137,7 @@ impl FlappyBird {
 }
 
 impl Game for FlappyBird {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         if let ButtonState::Pressed = input_command.button_state {
             match (&self.state, input_command.command_type) {
                 (GameState::Playing, CommandType::Up | CommandType::Select) => self.player.jump(),
@@ -147,7 +148,7 @@ impl Game for FlappyBird {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
         let dt = delta_time.as_secs_f64();
 
@@ -182,7 +183,7 @@ impl Game for FlappyBird {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
         for wall in &self.walls {

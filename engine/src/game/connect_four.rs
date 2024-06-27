@@ -1,9 +1,8 @@
 use crate::animation::Animation;
 use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
-use crate::RenderBoard;
 use crate::GRID_SIZE;
 use crate::RGB;
-use anyhow::Result;
+use crate::{GameError, RenderBoard};
 use core::time::Duration;
 use smallvec::SmallVec;
 
@@ -52,7 +51,7 @@ impl ConnectFour {
         }
     }
 
-    pub fn move_col(&mut self, direction: CommandType) -> Result<()> {
+    pub fn move_col(&mut self, direction: CommandType) -> Result<(), GameError> {
         if direction == CommandType::Left && self.active_col > 0 {
             self.active_col -= 1;
         }
@@ -69,9 +68,9 @@ impl ConnectFour {
         }
     }
 
-    pub fn make_move(&mut self, x: usize, player: Player) -> Result<(usize, usize)> {
+    pub fn make_move(&mut self, x: usize, player: Player) -> Result<(usize, usize), GameError> {
         if x > self.board.cols() {
-            return Err(anyhow::anyhow!("Invalid move"));
+            return Err(GameError::OutOfBounds);
         }
         // println!(
         //     "Making move x: {}, rows() - 1: {}",
@@ -79,7 +78,7 @@ impl ConnectFour {
         //     self.board.rows() - 1
         // );
         if self.board.get(x, self.board.rows() - 1) != Cell::Empty {
-            return Err(anyhow::anyhow!("Column is full"));
+            return Err(GameError::InvalidMove);
         }
         let mut place: (usize, usize) = (x, 0);
         for y in (0..self.board.rows()).rev() {
@@ -173,7 +172,7 @@ impl Default for ConnectFour {
     }
 }
 impl Game for ConnectFour {
-    fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         match &self.state {
             ConnectFourState::Playing => {
                 if input_command.player != self.active_player {
@@ -229,7 +228,7 @@ impl Game for ConnectFour {
         Ok(())
     }
 
-    fn update(&mut self, delta_time: Duration) -> Result<()> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
 
         match &self.state {
@@ -242,16 +241,14 @@ impl Game for ConnectFour {
         Ok(())
     }
 
-    fn render(&self) -> Result<RenderBoard> {
-        //let mut render_board = RenderBoard::new(RGB::new(0, 0, 0));
+    fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
         match &self.state {
             ConnectFourState::Playing => {
                 for col in 0..self.board.cols() {
                     for row in 0..self.board.rows() {
-                        //let cell = self.board.get(col, row);
-                        let cell = self.board.get(col, row); //why does ot crash when I switch row and col?
+                        let cell = self.board.get(col, row);
                         let mut rgb = RGB::new(0, 0, 0);
                         if col == self.active_col {
                             match &self.active_player {

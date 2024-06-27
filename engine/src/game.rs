@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::GameError;
 use core::time::Duration;
 
 mod connect_four;
@@ -6,24 +6,24 @@ mod doodle_jump;
 mod flappy_bird;
 mod maze;
 mod menu;
+mod pong;
+mod shooter;
 mod snake;
 mod space_invaders;
 mod tetris;
 mod tictactoe;
-mod shooter;
-mod pong;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
 use flappy_bird::FlappyBird;
 use maze::{MazeGame, MazeGameMode};
 use menu::Menu;
+use pong::PongGame;
+use shooter::MultiplayerShooter;
 use snake::{SnakeGame, SnakeGameMode};
 use space_invaders::SpaceInvaders;
 use tetris::TetrisGame;
 use tictactoe::TicTacToe;
-use shooter::MultiplayerShooter;
-use pong::PongGame;
 
 pub const GRID_SIZE: usize = 12;
 
@@ -43,9 +43,9 @@ impl RGB {
 }
 
 pub trait Game {
-    fn process_input(&mut self, input: GameCommand) -> Result<()>;
-    fn update(&mut self, delta_time: Duration) -> Result<()>;
-    fn render(&self) -> Result<RenderBoard>;
+    fn process_input(&mut self, input: GameCommand) -> Result<(), GameError>;
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError>;
+    fn render(&self) -> Result<RenderBoard, GameError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -142,7 +142,7 @@ impl<T: Game> GameEngine<T> {
         Self { game }
     }
 
-    pub fn process_input(&mut self, input_command: GameCommand) -> Result<()> {
+    pub fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         // TODO
         // Intercept input here before sending to game
         // to allow quitting the running game and returning to the main menu
@@ -153,11 +153,11 @@ impl<T: Game> GameEngine<T> {
         self.game.process_input(input_command)
     }
 
-    pub fn update(&mut self, current_time: Duration) -> Result<()> {
+    pub fn update(&mut self, current_time: Duration) -> Result<(), GameError> {
         self.game.update(current_time)
     }
 
-    pub fn render(&self) -> Result<RenderBoard> {
+    pub fn render(&self) -> Result<RenderBoard, GameError> {
         self.game.render()
     }
 }
