@@ -21,7 +21,7 @@ use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 16;
+const NUM_GAMES: usize = 17;
 
 enum MenuState {
     Selecting,
@@ -83,6 +83,7 @@ define_game_type_and_impl!(
     PongGame(PongGame),
     ButtonWar(ButtonWar),
     WallDodger(WallDodger),
+    WallDodgerMultiplayer(WallDodger),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -106,6 +107,7 @@ impl GameTypeInfo {
             GameTypeInfo::PongGame => pixel_art::PONG,
             GameTypeInfo::ButtonWar => pixel_art::TUGOFWAR,
             GameTypeInfo::WallDodger => pixel_art::WALLDODGER,
+            GameTypeInfo::WallDodgerMultiplayer => pixel_art::WALLDODGER_MULTIPLAYER,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -168,6 +170,7 @@ impl Menu {
             13 => GameTypeInfo::PongGame,
             14 => GameTypeInfo::ButtonWar,
             15 => GameTypeInfo::WallDodger,
+            16 => GameTypeInfo::WallDodgerMultiplayer,
             _ => unreachable!(),
         }
     }
@@ -209,7 +212,8 @@ impl Menu {
             }
             GameTypeInfo::PongGame => GameType::PongGame(PongGame::new(seed)),
             GameTypeInfo::ButtonWar => GameType::ButtonWar(ButtonWar::new()),
-            GameTypeInfo::WallDodger => GameType::WallDodger(WallDodger::new(seed)),
+            GameTypeInfo::WallDodger => GameType::WallDodger(WallDodger::new(seed, false)),
+            GameTypeInfo::WallDodgerMultiplayer => GameType::WallDodgerMultiplayer(WallDodger::new(seed, true)),
         };
         self.state = MenuState::RunningGame(game);
     }

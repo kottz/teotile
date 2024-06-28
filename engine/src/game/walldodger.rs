@@ -1,5 +1,7 @@
 use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
+use crate::game::{
+    ButtonState, CommandType, Game, GameCommand, Player as GamePlayer, RenderBoard, RGB,
+};
 use crate::GameError;
 
 use crate::random::CustomRng;
@@ -29,13 +31,20 @@ const DANGER_COLORS: [(u8, u8, u8); 10] = [
 struct Player {
     col: usize,
     row: usize,
+    is_alive: bool,
+    color: RGB,
 }
 
 impl Player {
-    fn new() -> Self {
+    fn new(player: GamePlayer) -> Self {
         Self {
             col: 0,
-            row: GRID_SIZE / 2,
+            row: match player {
+                GamePlayer::Player1 => GRID_SIZE / 3,
+                GamePlayer::Player2 => 2 * GRID_SIZE / 3,
+            },
+            is_alive: true,
+            color: player_color(player),
         }
     }
 
@@ -76,7 +85,7 @@ enum GameState {
 
 pub struct WallDodger {
     state: GameState,
-    player: Player,
+    players: SmallVec<[Player; 2]>,
     walls: SmallVec<[Wall; GRID_SIZE]>,
     current_time: Duration,
     wall_gap: usize,
@@ -87,13 +96,20 @@ pub struct WallDodger {
     victory_animation: Animation,
     walls_passed: usize,
     color_index: usize,
+    is_multiplayer: bool,
 }
 
 impl WallDodger {
-    pub fn new(seed: u64) -> Self {
+    pub fn new(seed: u64, is_multiplayer: bool) -> Self {
+        let mut players = SmallVec::new();
+        players.push(Player::new(GamePlayer::Player1));
+        if is_multiplayer {
+            players.push(Player::new(GamePlayer::Player2));
+        }
+
         Self {
             state: GameState::Playing,
-            player: Player::new(),
+            players,
             walls: SmallVec::new(),
             current_time: Duration::ZERO,
             wall_gap: 8,
@@ -104,6 +120,7 @@ impl WallDodger {
             victory_animation: Animation::new(VICTORY_ANIMATION_SPEED),
             walls_passed: 0,
             color_index: 0,
+            is_multiplayer,
         }
     }
 
@@ -114,7 +131,7 @@ impl WallDodger {
                 false
             } else {
                 wall.col -= 1;
-                if wall.col == self.player.col {
+                if wall.col == 0 {
                     wall_passed = true;
                 }
                 true
@@ -132,12 +149,24 @@ impl WallDodger {
         self.walls.push(Wall::new(GRID_SIZE - 1, gap_row, GAP_SIZE));
     }
 
-    fn detect_collision(&self) -> bool {
-        self.walls.iter().any(|wall| {
-            wall.col == self.player.col
-                && !(wall.gap_row <= self.player.row
-                    && self.player.row < wall.gap_row + wall.gap_size)
-        })
+    fn detect_collisions(&mut self) {
+        for player in self.players.iter_mut() {
+            if player.is_alive {
+                for wall in &self.walls {
+                    if wall.col == player.col
+                        && !(wall.gap_row <= player.row
+                            && player.row < wall.gap_row + wall.gap_size)
+                    {
+                        player.is_alive = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !self.players.iter().any(|p| p.is_alive) {
+            self.state = GameState::GameOver;
+        }
     }
 
     fn level_up(&mut self) {
@@ -153,7 +182,11 @@ impl WallDodger {
     fn reset_game(&mut self) {
         self.state = GameState::Playing;
         self.walls.clear();
-        self.player = Player::new();
+        self.players.clear();
+        self.players.push(Player::new(GamePlayer::Player1));
+        if self.is_multiplayer {
+            self.players.push(Player::new(GamePlayer::Player2));
+        }
         self.walls_passed = 0;
         self.color_index = 0;
         self.wall_period = 0.18;
@@ -162,6 +195,14 @@ impl WallDodger {
     fn wall_color(&self) -> RGB {
         let (r, g, b) = DANGER_COLORS[self.color_index % DANGER_COLORS.len()];
         RGB::new(r, g, b)
+    }
+
+    fn blend_colors(color1: RGB, color2: RGB) -> RGB {
+        RGB::new(
+            (color1.r as u16 + color2.r as u16) as u8 / 2,
+            (color1.g as u16 + color2.g as u16) as u8 / 2,
+            (color1.b as u16 + color2.b as u16) as u8 / 2,
+        )
     }
 
     fn generate_psychedelic_color(&self, row: usize, col: usize, time: Duration) -> RGB {
@@ -178,8 +219,24 @@ impl Game for WallDodger {
     fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
         if let ButtonState::Pressed = input_command.button_state {
             match (&self.state, input_command.command_type) {
-                (GameState::Playing, CommandType::Up) => self.player.move_up(),
-                (GameState::Playing, CommandType::Down) => self.player.move_down(),
+                (GameState::Playing, CommandType::Up) => {
+                    if let Some(player) = self
+                        .players
+                        .iter_mut()
+                        .find(|p| p.is_alive && p.color == player_color(input_command.player))
+                    {
+                        player.move_up();
+                    }
+                }
+                (GameState::Playing, CommandType::Down) => {
+                    if let Some(player) = self
+                        .players
+                        .iter_mut()
+                        .find(|p| p.is_alive && p.color == player_color(input_command.player))
+                    {
+                        player.move_down();
+                    }
+                }
                 (GameState::GameOver, CommandType::Select)
                 | (GameState::Victory(_), CommandType::Select) => self.reset_game(),
                 _ => {}
@@ -195,10 +252,7 @@ impl Game for WallDodger {
             GameState::Playing => {
                 let dt = delta_time.as_secs_f64();
 
-                if self.detect_collision() {
-                    self.state = GameState::GameOver;
-                    return Ok(());
-                }
+                self.detect_collisions();
 
                 self.last_wall_time += dt;
                 if self.last_wall_time > self.wall_period {
@@ -241,6 +295,18 @@ impl Game for WallDodger {
                     }
                 }
 
+                for player in &self.players {
+                    if player.is_alive {
+                        render_board.set(player.col, player.row, player.color);
+                    }
+                }
+
+                if self.players.len() == 2 && self.players[0].row == self.players[1].row {
+                    let blended_color =
+                        Self::blend_colors(self.players[0].color, self.players[1].color);
+                    render_board.set(self.players[0].col, self.players[0].row, blended_color);
+                }
+
                 if let GameState::GameOver = self.state {
                     if let Some(first_wall) = self.walls.first() {
                         if first_wall.col == 0 {
@@ -253,13 +319,6 @@ impl Game for WallDodger {
                         }
                     }
                 }
-
-                let player_color = match self.state {
-                    GameState::Playing => RGB::new(0, 255, 0),
-                    GameState::GameOver => RGB::new(189, 20, 20),
-                    _ => unreachable!(),
-                };
-                render_board.set(self.player.col, self.player.row, player_color);
             }
             GameState::Victory(elapsed_time) => {
                 for row in 0..GRID_SIZE {
@@ -272,5 +331,12 @@ impl Game for WallDodger {
         }
 
         Ok(render_board)
+    }
+}
+
+fn player_color(player: GamePlayer) -> RGB {
+    match player {
+        GamePlayer::Player1 => RGB::new(0, 255, 0), // Green
+        GamePlayer::Player2 => RGB::new(0, 0, 255), // Blue
     }
 }
