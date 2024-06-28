@@ -301,7 +301,10 @@ impl Game for WallDodger {
                     }
                 }
 
-                if self.players.len() == 2 && self.players[0].row == self.players[1].row {
+                if self.players.len() == 2
+                    && self.players.iter().all(|f| f.is_alive)
+                    && self.players[0].row == self.players[1].row
+                {
                     let blended_color =
                         Self::blend_colors(self.players[0].color, self.players[1].color);
                     render_board.set(self.players[0].col, self.players[0].row, blended_color);
