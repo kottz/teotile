@@ -13,6 +13,7 @@ mod space_invaders;
 mod tetris;
 mod tictactoe;
 mod tugofwar;
+mod walldodger;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
@@ -26,6 +27,7 @@ use space_invaders::SpaceInvaders;
 use tetris::TetrisGame;
 use tictactoe::TicTacToe;
 use tugofwar::ButtonWar;
+use walldodger::WallDodger;
 
 pub const GRID_SIZE: usize = 12;
 

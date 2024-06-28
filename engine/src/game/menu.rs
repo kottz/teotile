@@ -15,12 +15,13 @@ use crate::game::TetrisGame;
 use crate::game::TicTacToe;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
+use crate::game::WallDodger;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 15;
+const NUM_GAMES: usize = 16;
 
 enum MenuState {
     Selecting,
@@ -81,6 +82,7 @@ define_game_type_and_impl!(
     MultiplayerShooter(MultiplayerShooter),
     PongGame(PongGame),
     ButtonWar(ButtonWar),
+    WallDodger(WallDodger),
 );
 
 type PixelArtImage = [[RGB; 8]; 8];
@@ -103,6 +105,7 @@ impl GameTypeInfo {
             GameTypeInfo::MultiplayerShooter => pixel_art::SHOOTER,
             GameTypeInfo::PongGame => pixel_art::PONG,
             GameTypeInfo::ButtonWar => pixel_art::TUGOFWAR,
+            GameTypeInfo::WallDodger => pixel_art::WALLDODGER,
         };
         let mut pixel_art = [[RGB::default(); 8]; 8];
 
@@ -164,6 +167,7 @@ impl Menu {
             12 => GameTypeInfo::MultiplayerShooter,
             13 => GameTypeInfo::PongGame,
             14 => GameTypeInfo::ButtonWar,
+            15 => GameTypeInfo::WallDodger,
             _ => unreachable!(),
         }
     }
@@ -205,6 +209,7 @@ impl Menu {
             }
             GameTypeInfo::PongGame => GameType::PongGame(PongGame::new(seed)),
             GameTypeInfo::ButtonWar => GameType::ButtonWar(ButtonWar::new()),
+            GameTypeInfo::WallDodger => GameType::WallDodger(WallDodger::new(seed)),
         };
         self.state = MenuState::RunningGame(game);
     }
