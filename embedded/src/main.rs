@@ -1,12 +1,12 @@
-//! This example shows powerful PIO module in the RP2040 chip to communicate with WS2812 LED modules.
-//! See (https://www.sparkfun.com/categories/tags/ws2812)
-
 #![no_std]
 #![no_main]
+
+extern crate alloc;
 
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::dma::{AnyChannel, Channel};
+use embassy_rp::gpio::Pin;
 use embassy_rp::peripherals::PIO0;
 use embassy_rp::pio::{
     Common, Config, FifoJoin, Instance, InterruptHandler, Pio, PioPin, ShiftConfig, ShiftDirection,
@@ -19,7 +19,20 @@ use fixed_macro::fixed;
 use smart_leds::RGB8;
 use {defmt_rtt as _, panic_probe as _};
 
+use core::mem::MaybeUninit;
+use core::time::Duration as StdDuration;
 use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player};
+
+mod gamepad;
+use gamepad::{GamepadEvent, GamepadHandler};
+
+use embedded_alloc::Heap;
+
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+
+const HEAP_SIZE: usize = 32768;
+static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => InterruptHandler<PIO0>;
@@ -40,8 +53,6 @@ impl<'d, P: Instance, const S: usize, const N: usize> Ws2812<'d, P, S, N> {
         into_ref!(dma);
 
         // Setup sm0
-
-        // prepare the PIO program
         let side_set = pio::SideSet::new(false, 1, false);
         let mut a: pio::Assembler<32> = pio::Assembler::new_with_side_set(side_set);
 
@@ -77,7 +88,6 @@ impl<'d, P: Instance, const S: usize, const N: usize> Ws2812<'d, P, S, N> {
         cfg.use_program(&pio.load_program(&prg), &[&out_pin]);
 
         // Clock config, measured in kHz to avoid overflows
-        // TODO CLOCK_FREQ should come from embassy_rp
         let clock_freq = U24F8::from_num(clocks::clk_sys_freq() / 1000);
         let ws2812_freq = fixed!(800: U24F8);
         let bit_freq = ws2812_freq * CYCLES_PER_BIT;
@@ -117,23 +127,11 @@ impl<'d, P: Instance, const S: usize, const N: usize> Ws2812<'d, P, S, N> {
     }
 }
 
-/// Input a value 0 to 255 to get a color value
-/// The colours are a transition r - g - b - back to r.
-fn wheel(mut wheel_pos: u8) -> RGB8 {
-    wheel_pos = 255 - wheel_pos;
-    if wheel_pos < 85 {
-        return (255 - wheel_pos * 3, 0, wheel_pos * 3).into();
-    }
-    if wheel_pos < 170 {
-        wheel_pos -= 85;
-        return (0, wheel_pos * 3, 255 - wheel_pos * 3).into();
-    }
-    wheel_pos -= 170;
-    (wheel_pos * 3, 255 - wheel_pos * 3, 0).into()
-}
-
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
+    // Initialize the allocator
+    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+
     info!("Start");
     let p = embassy_rp::init(Default::default());
 
@@ -141,28 +139,101 @@ async fn main(_spawner: Spawner) {
         mut common, sm0, ..
     } = Pio::new(p.PIO0, Irqs);
 
-    // This is the number of leds in the string. Helpfully, the sparkfun thing plus and adafruit
-    // feather boards for the 2040 both have one built in.
-    const NUM_LEDS: usize = 1;
+    // Initialize GamepadHandler with GPIO pins
+    let mut gamepad = GamepadHandler::new(
+        p.PIN_2.degrade(),
+        p.PIN_3.degrade(),
+        p.PIN_4.degrade(),
+        p.PIN_5.degrade(),
+        p.PIN_6.degrade(),
+        p.PIN_7.degrade(),
+        p.PIN_8.degrade(),
+        p.PIN_9.degrade(),
+        p.PIN_10.degrade(),
+        p.PIN_11.degrade(),
+        p.PIN_12.degrade(),
+        p.PIN_13.degrade(),
+    );
+
+    // This is the number of leds in the string.
+    const NUM_LEDS: usize = 144; // Adjusted to 12x12 grid
     let mut data = [RGB8::default(); NUM_LEDS];
 
-    // Common neopixel pins:
-    // Thing plus: 8
-    // Adafruit Feather: 16;  Adafruit Feather+RFM95: 4
     let mut ws2812 = Ws2812::new(&mut common, sm0, p.DMA_CH0, p.PIN_16);
 
-    // Loop forever making RGB values and pushing them out to the WS2812.
-    let mut ticker = Ticker::every(Duration::from_millis(10));
+    let mut game_engine = GameEngine::default();
+
+    // Main game loop
+    let mut ticker = Ticker::every(Duration::from_millis(16)); // ~60 FPS
     loop {
-        for j in 0..(256 * 5) {
-            debug!("New Colors:");
-            for i in 0..NUM_LEDS {
-                data[i] = wheel((((i * 256) as u16 / NUM_LEDS as u16 + j as u16) & 255) as u8);
-                debug!("R: {} G: {} B: {}", data[i].r, data[i].g, data[i].b);
+        // Poll for gamepad events
+        gamepad.poll_events().await;
+
+        while let Some(event) = gamepad.get_event() {
+            if let Some(command) = gamepad_event_to_command(event) {
+                let _ = game_engine.process_input(command);
+            }
+        }
+
+        // Update game state
+        game_engine.update(StdDuration::from_millis(16)).unwrap();
+
+        // Render game state
+        if let Ok(render_board) = game_engine.render() {
+            // Convert render_board to LED data
+            for col in 0..12 {
+                for row in 0..12 {
+                    let i = col + row * 12;
+                    let pixel = render_board.get(col, row);
+                    data[i] = RGB8::new(pixel.r, pixel.g, pixel.b);
+                }
             }
             ws2812.write(&data).await;
-
-            ticker.next().await;
         }
+
+        ticker.next().await;
+    }
+}
+
+fn gamepad_event_to_command(event: GamepadEvent) -> Option<GameCommand> {
+    match event {
+        GamepadEvent::DPadUp(id) => Some(GameCommand::new(
+            CommandType::Up,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+        GamepadEvent::DPadDown(id) => Some(GameCommand::new(
+            CommandType::Down,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+        GamepadEvent::DPadLeft(id) => Some(GameCommand::new(
+            CommandType::Left,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+        GamepadEvent::DPadRight(id) => Some(GameCommand::new(
+            CommandType::Right,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+        GamepadEvent::South(id) => Some(GameCommand::new(
+            CommandType::Select,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+        GamepadEvent::East(id) => Some(GameCommand::new(
+            CommandType::Quit,
+            ButtonState::Pressed,
+            player_from_id(id),
+        )),
+    }
+}
+
+fn player_from_id(id: usize) -> Player {
+    match id {
+        0 => Player::Player1,
+        1 => Player::Player2,
+        _ => Player::Player1, // Default to Player1 for any additional controllers
     }
 }
