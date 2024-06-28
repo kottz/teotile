@@ -2,8 +2,8 @@ use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
 use crate::GameError;
 
-use core::time::Duration;
 use crate::random::CustomRng;
+use core::time::Duration;
 use smallvec::SmallVec;
 
 const GRID_SIZE: usize = 12;

@@ -1,10 +1,12 @@
 use crate::{
-    animation::Animation, game::{CommandType, Game, GameCommand, RenderBoard, RGB}, GameError, Player
+    animation::Animation,
+    game::{CommandType, Game, GameCommand, RenderBoard, RGB},
+    GameError, Player,
 };
 
+use crate::random::CustomRng;
 use core::time::Duration;
 use libm::sqrt;
-use crate::random::CustomRng;
 use smallvec::SmallVec;
 
 const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);

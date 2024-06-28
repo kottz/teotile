@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-smallvec = "1.13.2"
 libm = "0.2.8"
 rand_core = { version = "0.6.4", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
+smallvec = { version = "1.13.2", default-features = false, features = ["const_generics"] }
 
 [build-dependencies]
 image = "0.25.1"

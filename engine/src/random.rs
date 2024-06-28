@@ -6,10 +6,6 @@ pub struct CustomRng {
 }
 
 impl CustomRng {
-    pub fn new(seed: u64) -> Self {
-        Self::seed_from_u64(seed)
-    }
-
     pub fn seed_from_u64(seed: u64) -> Self {
         Self {
             rng: ChaCha8Rng::seed_from_u64(seed),

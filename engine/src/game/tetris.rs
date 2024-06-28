@@ -1,10 +1,9 @@
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand};
+use crate::random::CustomRng;
 use crate::RGB;
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
-//use rand::{rngs::SmallRng, Rng, SeedableRng};
-use crate::random::CustomRng;
 
 const GRID_WIDTH: usize = 12;
 const GRID_HEIGHT: usize = 12;
