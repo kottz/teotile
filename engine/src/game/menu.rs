@@ -21,7 +21,7 @@ use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-const NUM_GAMES: usize = 17;
+const NUM_GAMES: usize = 18;
 
 enum MenuState {
     Selecting,
@@ -73,6 +73,7 @@ define_game_type_and_impl!(
     Snake(SnakeGame),
     SnakeMultiPlayer(SnakeGame),
     Maze(MazeGame),
+    MazeMultiplayer(MazeGame),
     MazeFlashLight(MazeGame),
     MazeFlashLightMultiplayer(MazeGame),
     SpaceInvaders(SpaceInvaders),
@@ -97,6 +98,7 @@ impl GameTypeInfo {
             GameTypeInfo::Snake => pixel_art::SNAKE,
             GameTypeInfo::SnakeMultiPlayer => pixel_art::SNAKE_MULTIPLAYER,
             GameTypeInfo::Maze => pixel_art::MAZE,
+            GameTypeInfo::MazeMultiplayer => pixel_art::MAZE_MULTIPLAYER,
             GameTypeInfo::MazeFlashLight => pixel_art::MAZE_FLASHLIGHT,
             GameTypeInfo::MazeFlashLightMultiplayer => pixel_art::MAZE_FLASHLIGHT_MULTIPLAYER,
             GameTypeInfo::SpaceInvaders => pixel_art::SPACE_INVADERS,
@@ -160,17 +162,18 @@ impl Menu {
             3 => GameTypeInfo::Snake,
             4 => GameTypeInfo::SnakeMultiPlayer,
             5 => GameTypeInfo::Maze,
-            6 => GameTypeInfo::MazeFlashLight,
-            7 => GameTypeInfo::MazeFlashLightMultiplayer,
-            8 => GameTypeInfo::SpaceInvaders,
-            9 => GameTypeInfo::SpaceInvadersMultiPlayer,
-            10 => GameTypeInfo::DoodleJump,
-            11 => GameTypeInfo::Tetris,
-            12 => GameTypeInfo::MultiplayerShooter,
-            13 => GameTypeInfo::PongGame,
-            14 => GameTypeInfo::ButtonWar,
-            15 => GameTypeInfo::WallDodger,
-            16 => GameTypeInfo::WallDodgerMultiplayer,
+            6 => GameTypeInfo::MazeMultiplayer,
+            7 => GameTypeInfo::MazeFlashLight,
+            8 => GameTypeInfo::MazeFlashLightMultiplayer,
+            9 => GameTypeInfo::SpaceInvaders,
+            10 => GameTypeInfo::SpaceInvadersMultiPlayer,
+            11 => GameTypeInfo::DoodleJump,
+            12 => GameTypeInfo::Tetris,
+            13 => GameTypeInfo::MultiplayerShooter,
+            14 => GameTypeInfo::PongGame,
+            15=> GameTypeInfo::ButtonWar,
+            16 => GameTypeInfo::WallDodger,
+            17 => GameTypeInfo::WallDodgerMultiplayer,
             _ => unreachable!(),
         }
     }
@@ -193,6 +196,7 @@ impl Menu {
                 GameType::Snake(SnakeGame::new(seed, SnakeGameMode::MultiPlayer))
             }
             GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed, MazeGameMode::Normal)),
+            GameTypeInfo::MazeMultiplayer => GameType::MazeMultiplayer(MazeGame::new(seed, MazeGameMode::Multiplayer)),
             GameTypeInfo::MazeFlashLight => {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLight))
             }

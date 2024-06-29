@@ -30,6 +30,7 @@ enum MazeGameState {
 
 pub enum MazeGameMode {
     Normal,
+    Multiplayer,
     FlashLight,
     FlashLightMultiplayer,
 }
@@ -151,13 +152,14 @@ impl Game for MazeGame {
                     _ => (0, 0),
                 };
 
-                let player_index = if let MazeGameMode::FlashLightMultiplayer = self.mode {
-                    match input.player {
-                        Player::Player1 => 0,
-                        Player::Player2 => 1,
+                let player_index = match self.mode {
+                    MazeGameMode::Normal | MazeGameMode::FlashLight => 0,
+                    MazeGameMode::Multiplayer | MazeGameMode::FlashLightMultiplayer => {
+                        match input.player {
+                            Player::Player1 => 0,
+                            Player::Player2 => 1,
+                        }
                     }
-                } else {
-                    0
                 };
 
                 let (x, y) = self.player_pos[player_index];
@@ -180,7 +182,12 @@ impl Game for MazeGame {
             MazeGameState::GameOver => {
                 if input.command_type == CommandType::Select {
                     self.board = MazeBoard::new(self.board.seed + 1);
-                    self.player_pos = [(1, 1); 2];
+                    self.player_pos = match self.mode {
+                        MazeGameMode::Normal | MazeGameMode::FlashLight => [(1, 1), (0, 0)],
+                        MazeGameMode::Multiplayer | MazeGameMode::FlashLightMultiplayer => {
+                            [(1, 1), (1, 2)]
+                        }
+                    };
                     self.exit_pos = self.board.find_furthest_tile(self.player_pos[0]);
                     self.state = MazeGameState::Playing;
                 }
@@ -204,7 +211,7 @@ impl Game for MazeGame {
         let mut render_board = RenderBoard::new();
         match &self.state {
             MazeGameState::Playing => match &self.mode {
-                MazeGameMode::Normal => {
+                MazeGameMode::Normal | MazeGameMode::Multiplayer => {
                     for x in 0..GRID_SIZE {
                         for y in 0..GRID_SIZE {
                             let rgb = match self.board.tiles[x][y] {
@@ -220,6 +227,13 @@ impl Game for MazeGame {
                         self.player_pos[0].1,
                         RGB::new(0, 255, 0),
                     );
+                    if let MazeGameMode::Multiplayer = self.mode {
+                        render_board.set(
+                            self.player_pos[1].0,
+                            self.player_pos[1].1,
+                            RGB::new(0, 0, 255),
+                        );
+                    }
                 }
                 MazeGameMode::FlashLight => {
                     let distance = |x: usize, y: usize| {
@@ -331,7 +345,7 @@ impl Game for MazeGame {
                     self.player_pos[0].1,
                     RGB::new(0, 255, 0),
                 );
-                if let MazeGameMode::FlashLightMultiplayer = self.mode {
+                if let MazeGameMode::Multiplayer | MazeGameMode::FlashLightMultiplayer = self.mode {
                     render_board.set(
                         self.player_pos[1].0,
                         self.player_pos[1].1,
