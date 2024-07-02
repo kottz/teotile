@@ -69,7 +69,7 @@ impl Game for PaintGame {
                     }
                 }
                 CommandType::Up => {
-                    if self.cursor.1 < GRID_SIZE - 1 {
+                    if self.cursor.1 < COLOR_ROW {
                         self.cursor.1 += 1;
                     }
                 }
@@ -80,21 +80,7 @@ impl Game for PaintGame {
                 }
                 CommandType::Select => {
                     if self.cursor.1 == COLOR_ROW {
-                        self.selected_color = match self.cursor.0 {
-                            0 => Color::Empty,
-                            1 => Color::Red,
-                            2 => Color::Green,
-                            3 => Color::Blue,
-                            4 => Color::Yellow,
-                            5 => Color::Cyan,
-                            6 => Color::Magenta,
-                            7 => Color::Orange,
-                            8 => Color::Purple,
-                            9 => Color::Brown,
-                            10 => Color::Pink,
-                            11 => Color::White,
-                            _ => self.selected_color,
-                        };
+                        self.selected_color = self.get_color_from_palette(self.cursor.0);
                     } else {
                         self.board
                             .set(self.cursor.0, self.cursor.1, self.selected_color);
@@ -121,22 +107,9 @@ impl Game for PaintGame {
         }
 
         // Render color selection row
-        let colors = [
-            Color::Empty,
-            Color::Red,
-            Color::Green,
-            Color::Blue,
-            Color::Yellow,
-            Color::Cyan,
-            Color::Magenta,
-            Color::Orange,
-            Color::Purple,
-            Color::Brown,
-            Color::Pink,
-            Color::White,
-        ];
-        for (i, color) in colors.iter().enumerate() {
-            render_board.set(i, COLOR_ROW, color.to_rgb());
+        for x in 0..GRID_SIZE {
+            let color = self.get_color_from_palette(x);
+            render_board.set(x, COLOR_ROW, color.to_rgb());
         }
 
         // Render cursor
@@ -157,6 +130,24 @@ impl PaintGame {
             board: Board::new(),
             cursor: (0, 0),
             selected_color: Color::Red,
+        }
+    }
+
+    fn get_color_from_palette(&self, index: usize) -> Color {
+        match index {
+            0 => Color::Empty,
+            1 => Color::Red,
+            2 => Color::Green,
+            3 => Color::Blue,
+            4 => Color::Yellow,
+            5 => Color::Cyan,
+            6 => Color::Magenta,
+            7 => Color::Orange,
+            8 => Color::Purple,
+            9 => Color::Brown,
+            10 => Color::Pink,
+            11 => Color::White,
+            _ => Color::Empty, // Default to Empty for any out-of-bounds index
         }
     }
 }
@@ -184,32 +175,26 @@ mod tests {
         let mut game = PaintGame::new();
 
         // Move cursor to the color selection row
-        for _ in 0..11 {
+        for _ in 0..COLOR_ROW {
             game.process_input(GameCommand {
                 player: crate::game::Player::Player1,
                 button_state: ButtonState::Pressed,
-                command_type: CommandType::Right,
+                command_type: CommandType::Up,
             })
             .unwrap();
         }
-        game.process_input(GameCommand {
-            player: crate::game::Player::Player1,
-            button_state: ButtonState::Pressed,
-            command_type: CommandType::Up,
-        })
-        .unwrap();
 
         // Select blue color
         game.process_input(GameCommand {
             player: crate::game::Player::Player1,
             button_state: ButtonState::Pressed,
-            command_type: CommandType::Left,
+            command_type: CommandType::Right,
         })
         .unwrap();
         game.process_input(GameCommand {
             player: crate::game::Player::Player1,
             button_state: ButtonState::Pressed,
-            command_type: CommandType::Left,
+            command_type: CommandType::Right,
         })
         .unwrap();
         game.process_input(GameCommand {
@@ -257,5 +242,53 @@ mod tests {
         .unwrap();
 
         assert_eq!(game.board.get(1, 1), Color::Red);
+    }
+
+    #[test]
+    fn test_boundary_movement() {
+        let mut game = PaintGame::new();
+
+        // Try to move left from (0, 0)
+        game.process_input(GameCommand {
+            player: crate::game::Player::Player1,
+            button_state: ButtonState::Pressed,
+            command_type: CommandType::Left,
+        })
+        .unwrap();
+        assert_eq!(game.cursor, (0, 0));
+
+        // Move to top-right corner
+        for _ in 0..GRID_SIZE - 1 {
+            game.process_input(GameCommand {
+                player: crate::game::Player::Player1,
+                button_state: ButtonState::Pressed,
+                command_type: CommandType::Right,
+            })
+            .unwrap();
+        }
+        for _ in 0..GRID_SIZE - 1 {
+            game.process_input(GameCommand {
+                player: crate::game::Player::Player1,
+                button_state: ButtonState::Pressed,
+                command_type: CommandType::Up,
+            })
+            .unwrap();
+        }
+        assert_eq!(game.cursor, (GRID_SIZE - 1, COLOR_ROW));
+
+        // Try to move beyond boundaries
+        game.process_input(GameCommand {
+            player: crate::game::Player::Player1,
+            button_state: ButtonState::Pressed,
+            command_type: CommandType::Right,
+        })
+        .unwrap();
+        game.process_input(GameCommand {
+            player: crate::game::Player::Player1,
+            button_state: ButtonState::Pressed,
+            command_type: CommandType::Up,
+        })
+        .unwrap();
+        assert_eq!(game.cursor, (GRID_SIZE - 1, COLOR_ROW));
     }
 }
