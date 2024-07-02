@@ -13,9 +13,9 @@ use crate::game::PongGame;
 use crate::game::SpaceInvaders;
 use crate::game::TetrisGame;
 use crate::game::TicTacToe;
+use crate::game::WallDodger;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
-use crate::game::WallDodger;
 
 use crate::pixel_art;
 
@@ -175,7 +175,7 @@ impl Menu {
             12 => GameTypeInfo::Tetris,
             13 => GameTypeInfo::MultiplayerShooter,
             14 => GameTypeInfo::PongGame,
-            15=> GameTypeInfo::ButtonWar,
+            15 => GameTypeInfo::ButtonWar,
             16 => GameTypeInfo::WallDodger,
             17 => GameTypeInfo::WallDodgerMultiplayer,
             18 => GameTypeInfo::PaintGame,
@@ -201,7 +201,9 @@ impl Menu {
                 GameType::Snake(SnakeGame::new(seed, SnakeGameMode::MultiPlayer))
             }
             GameTypeInfo::Maze => GameType::Maze(MazeGame::new(seed, MazeGameMode::Normal)),
-            GameTypeInfo::MazeMultiplayer => GameType::MazeMultiplayer(MazeGame::new(seed, MazeGameMode::Multiplayer)),
+            GameTypeInfo::MazeMultiplayer => {
+                GameType::MazeMultiplayer(MazeGame::new(seed, MazeGameMode::Multiplayer))
+            }
             GameTypeInfo::MazeFlashLight => {
                 GameType::Maze(MazeGame::new(seed, MazeGameMode::FlashLight))
             }
@@ -222,7 +224,9 @@ impl Menu {
             GameTypeInfo::PongGame => GameType::PongGame(PongGame::new(seed)),
             GameTypeInfo::ButtonWar => GameType::ButtonWar(ButtonWar::new()),
             GameTypeInfo::WallDodger => GameType::WallDodger(WallDodger::new(seed, false)),
-            GameTypeInfo::WallDodgerMultiplayer => GameType::WallDodgerMultiplayer(WallDodger::new(seed, true)),
+            GameTypeInfo::WallDodgerMultiplayer => {
+                GameType::WallDodgerMultiplayer(WallDodger::new(seed, true))
+            }
             GameTypeInfo::PaintGame => GameType::PaintGame(PaintGame::new()),
         };
         self.state = MenuState::RunningGame(game);

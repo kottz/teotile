@@ -6,6 +6,7 @@ mod doodle_jump;
 mod flappy_bird;
 mod maze;
 mod menu;
+mod paint;
 mod pong;
 mod shooter;
 mod snake;
@@ -14,13 +15,13 @@ mod tetris;
 mod tictactoe;
 mod tugofwar;
 mod walldodger;
-mod paint;
 
 use connect_four::ConnectFour;
 use doodle_jump::DoodleJump;
 use flappy_bird::FlappyBird;
 use maze::{MazeGame, MazeGameMode};
 use menu::Menu;
+use paint::PaintGame;
 use pong::PongGame;
 use shooter::MultiplayerShooter;
 use snake::{SnakeGame, SnakeGameMode};
@@ -29,7 +30,6 @@ use tetris::TetrisGame;
 use tictactoe::TicTacToe;
 use tugofwar::ButtonWar;
 use walldodger::WallDodger;
-use paint::PaintGame;
 
 pub const GRID_SIZE: usize = 12;
 
