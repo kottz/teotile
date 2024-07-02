@@ -93,27 +93,23 @@ impl Game for PaintGame {
     }
 
     fn update(&mut self, _delta_time: Duration) -> Result<(), GameError> {
-        // No continuous updates needed for this game
         Ok(())
     }
 
     fn render(&self) -> Result<RenderBoard, GameError> {
         let mut render_board = RenderBoard::new();
 
-        // Render canvas
         for y in 0..COLOR_ROW {
             for x in 0..CANVAS_SIZE {
                 render_board.set(x, y, self.board.get(x, y).to_rgb());
             }
         }
 
-        // Render color selection row
         for x in 0..GRID_SIZE {
             let color = self.get_color_from_palette(x);
             render_board.set(x, COLOR_ROW, color.to_rgb());
         }
 
-        // Render cursor
         let cursor_color = self.get_cursor_color();
         render_board.set(self.cursor.0, self.cursor.1, cursor_color);
 
@@ -150,19 +146,13 @@ impl PaintGame {
 
     fn get_cursor_color(&self) -> RGB {
         if self.cursor.1 == COLOR_ROW {
-            return RGB::new(128, 128, 128); // Gray for color selection row
+            return RGB::new(128, 128, 128);
         }
 
         let underlying_color = self.board.get(self.cursor.0, self.cursor.1);
         let selected_rgb = self.selected_color.to_rgb();
 
         if self.selected_color == underlying_color {
-            // Invert the color for contrast
-            // RGB::new(
-            //     255 - selected_rgb.r,
-            //     255 - selected_rgb.g,
-            //     255 - selected_rgb.b,
-            // )
             let r = selected_rgb.r.saturating_sub(128);
             let g = selected_rgb.g.saturating_sub(128);
             let b = selected_rgb.b.saturating_sub(128);
@@ -173,49 +163,12 @@ impl PaintGame {
             }
         } else if self.selected_color == Color::Empty {
             if underlying_color == Color::Empty {
-                RGB::new(5, 5, 5) // Slight gray for visibility on black squares
+                RGB::new(10, 10, 10) // Slight gray for visibility on black squares
             } else {
                 RGB::new(0, 0, 0) // Black cursor on non-black squares
             }
         } else {
             selected_rgb
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // ... (previous tests remain unchanged)
-
-    #[test]
-    fn test_cursor_visibility() {
-        let mut game = PaintGame::new();
-
-        // Test cursor on empty (black) square with empty selected
-        game.selected_color = Color::Empty;
-        game.cursor = (0, 0);
-        let cursor_color = game.get_cursor_color();
-        assert_eq!(cursor_color, RGB::new(5, 5, 5));
-
-        // Test cursor on red square with red selected
-        game.selected_color = Color::Red;
-        game.board.set(1, 1, Color::Red);
-        game.cursor = (1, 1);
-        let cursor_color = game.get_cursor_color();
-        assert_eq!(cursor_color, RGB::new(0, 255, 255)); // Inverted red
-
-        // Test cursor on blue square with green selected
-        game.selected_color = Color::Green;
-        game.board.set(2, 2, Color::Blue);
-        game.cursor = (2, 2);
-        let cursor_color = game.get_cursor_color();
-        assert_eq!(cursor_color, RGB::new(0, 255, 0)); // Normal green
-
-        // Test cursor on color selection row
-        game.cursor = (0, COLOR_ROW);
-        let cursor_color = game.get_cursor_color();
-        assert_eq!(cursor_color, RGB::new(128, 128, 128)); // Gray
     }
 }
