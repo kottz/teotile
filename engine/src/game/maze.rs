@@ -9,7 +9,8 @@ use core::time::Duration;
 use libm::sqrt;
 use smallvec::SmallVec;
 
-const WIN_ANIMATION_SPEED: Duration = Duration::from_millis(50);
+const VICTORY_ANIMATION_DURATION: Duration = Duration::from_secs(5);
+const VICTORY_ANIMATION_SPEED: Duration = Duration::from_millis(100);
 const GRID_SIZE: usize = 12;
 
 pub struct MazeGame {
@@ -18,14 +19,14 @@ pub struct MazeGame {
     mode: MazeGameMode,
     player_pos: [(usize, usize); 2],
     exit_pos: (usize, usize),
-    win_animation: Animation,
+    victory_animation: Animation,
     current_time: Duration,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum MazeGameState {
     Playing,
-    GameOver,
+    Victory(Duration),
 }
 
 pub enum MazeGameMode {
@@ -134,15 +135,24 @@ impl MazeGame {
             mode,
             player_pos,
             exit_pos,
-            win_animation: Animation::new(WIN_ANIMATION_SPEED),
+            victory_animation: Animation::new(VICTORY_ANIMATION_SPEED),
             current_time: Duration::from_millis(0),
         }
+    }
+
+    fn generate_psychedelic_color(&self, row: usize, col: usize, time: Duration) -> RGB {
+        let time_factor = time.as_secs_f32() * 2.0;
+        let r = ((libm::sinf((row as f32 * 0.3 + time_factor) * 2.0) + 1.0) * 127.5) as u8;
+        let g = ((libm::sinf((col as f32 * 0.3 + time_factor) * 2.0 + 2.094) + 1.0) * 127.5) as u8;
+        let b = ((libm::sinf((row as f32 + col as f32) * 0.3 + time_factor * 2.0 + 4.188) + 1.0)
+            * 127.5) as u8;
+        RGB::new(r, g, b)
     }
 }
 
 impl Game for MazeGame {
     fn process_input(&mut self, input: GameCommand) -> Result<(), GameError> {
-        match &self.state {
+        match &mut self.state {
             MazeGameState::Playing => {
                 let (dx, dy) = match input.command_type {
                     CommandType::Left => (-1, 0),
@@ -176,11 +186,13 @@ impl Game for MazeGame {
                 }
 
                 if self.player_pos[player_index] == self.exit_pos {
-                    self.state = MazeGameState::GameOver;
+                    self.state = MazeGameState::Victory(Duration::ZERO);
                 }
             }
-            MazeGameState::GameOver => {
-                if input.command_type == CommandType::Select {
+            MazeGameState::Victory(elapsed_time) => {
+                if input.command_type == CommandType::Select
+                    && *elapsed_time >= VICTORY_ANIMATION_DURATION
+                {
                     self.board = MazeBoard::new(self.board.seed + 1);
                     self.player_pos = match self.mode {
                         MazeGameMode::Normal | MazeGameMode::FlashLight => [(1, 1), (0, 0)],
@@ -195,13 +207,25 @@ impl Game for MazeGame {
         }
         Ok(())
     }
-    fn update(&mut self, delta_time: core::time::Duration) -> Result<(), GameError> {
+    fn update(&mut self, delta_time: Duration) -> Result<(), GameError> {
         self.current_time += delta_time;
 
-        match &self.state {
+        match &mut self.state {
             MazeGameState::Playing => {}
-            MazeGameState::GameOver => {
-                self.win_animation.update(self.current_time);
+            MazeGameState::Victory(elapsed_time) => {
+                *elapsed_time += delta_time;
+                self.victory_animation.update(self.current_time);
+                if *elapsed_time >= VICTORY_ANIMATION_DURATION {
+                    self.state = MazeGameState::Playing;
+                    self.board = MazeBoard::new(self.board.seed + 1);
+                    self.player_pos = match self.mode {
+                        MazeGameMode::Normal | MazeGameMode::FlashLight => [(1, 1), (0, 0)],
+                        MazeGameMode::Multiplayer | MazeGameMode::FlashLightMultiplayer => {
+                            [(1, 1), (1, 2)]
+                        }
+                    };
+                    self.exit_pos = self.board.find_furthest_tile(self.player_pos[0]);
+                }
             }
         }
         Ok(())
@@ -329,17 +353,14 @@ impl Game for MazeGame {
                     }
                 }
             },
-            MazeGameState::GameOver => {
-                let color = self.win_animation.get_color();
-                for x in 0..GRID_SIZE {
-                    for y in 0..GRID_SIZE {
-                        let rgb = match self.board.tiles[x][y] {
-                            MazeTile::Empty => RGB::new(0, 0, 0),
-                            MazeTile::Wall => color,
-                        };
-                        render_board.set(x, y, rgb);
+            MazeGameState::Victory(elapsed_time) => {
+                for row in 0..GRID_SIZE {
+                    for col in 0..GRID_SIZE {
+                        let color = self.generate_psychedelic_color(row, col, *elapsed_time);
+                        render_board.set(col, row, color);
                     }
                 }
+                // Render players
                 render_board.set(
                     self.player_pos[0].0,
                     self.player_pos[0].1,
