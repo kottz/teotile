@@ -1,12 +1,13 @@
 {
   "name": "teotile-web",
+  "type": "module",
   "version": "0.1.0",
   "files": [
     "teotile_web_bg.wasm",
     "teotile_web.js",
     "teotile_web.d.ts"
   ],
-  "module": "teotile_web.js",
+  "main": "teotile_web.js",
   "types": "teotile_web.d.ts",
   "sideEffects": [
     "./snippets/*"
