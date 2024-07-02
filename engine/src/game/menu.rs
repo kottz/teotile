@@ -16,12 +16,12 @@ use crate::game::TicTacToe;
 use crate::game::WallDodger;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
+use crate::game::PaintGame;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
 
-use super::paint::PaintGame;
 
 const NUM_GAMES: usize = 19;
 
