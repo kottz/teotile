@@ -147,7 +147,7 @@ impl MazeGame {
         players.push(Player::new(start_pos, RGB::new(0, 255, 0))); // Player 1: Green
 
         if let MazeGameMode::Multiplayer | MazeGameMode::FlashLightMultiplayer = mode {
-            players.push(Player::new((1, 2), RGB::new(0, 0, 255))); // Player 2: Blue
+            players.push(Player::new(start_pos, RGB::new(0, 0, 255))); // Player 2: Blue
         }
 
         Self {
@@ -193,9 +193,8 @@ impl MazeGame {
         let start_pos = (1, 1);
         self.exit_pos = self.board.find_furthest_tile(start_pos);
 
-        self.players[0].position = start_pos;
-        if self.players.len() > 1 {
-            self.players[1].position = (1, 2);
+        for player in &mut self.players {
+            player.position = start_pos;
         }
     }
 }
