@@ -185,6 +185,15 @@ impl MazeGame {
 
         RGB::new(r, g, b)
     }
+
+    fn blend_colors(color1: RGB, color2: RGB) -> RGB {
+        RGB::new(
+            (color1.r as u16 + color2.r as u16) as u8 / 2,
+            (color1.g as u16 + color2.g as u16) as u8 / 2,
+            (color1.b as u16 + color2.b as u16) as u8 / 2,
+        )
+    }
+
     fn reset_game(&mut self) {
         self.board = MazeBoard::new(self.board.seed + 1);
         self.state = MazeGameState::Playing;
@@ -282,10 +291,6 @@ impl Game for MazeGame {
                         }
                         // Render exit
                         render_board.set(self.exit_pos.0, self.exit_pos.1, RGB::new(255, 0, 0));
-                        // Render players
-                        for player in &self.players {
-                            render_board.set(player.position.0, player.position.1, player.color);
-                        }
                     }
                     MazeGameMode::FlashLight | MazeGameMode::FlashLightMultiplayer => {
                         let distance = |x: usize, y: usize, player: &Player| {
@@ -326,11 +331,21 @@ impl Game for MazeGame {
                             self.exit_pos.1,
                             RGB::new(exit_intensity, 0, 0),
                         );
+                    }
+                }
 
-                        // Render players
-                        for player in &self.players {
-                            render_board.set(player.position.0, player.position.1, player.color);
-                        }
+                // Render players with blending
+                if self.players.len() == 2 && self.players[0].position == self.players[1].position {
+                    let blended_color =
+                        Self::blend_colors(self.players[0].color, self.players[1].color);
+                    render_board.set(
+                        self.players[0].position.0,
+                        self.players[0].position.1,
+                        blended_color,
+                    );
+                } else {
+                    for player in &self.players {
+                        render_board.set(player.position.0, player.position.1, player.color);
                     }
                 }
             }
@@ -349,9 +364,20 @@ impl Game for MazeGame {
                         }
                     }
                 }
-                // Render players
-                for player in &self.players {
-                    render_board.set(player.position.0, player.position.1, player.color);
+
+                // Render players with blending
+                if self.players.len() == 2 && self.players[0].position == self.players[1].position {
+                    let blended_color =
+                        Self::blend_colors(self.players[0].color, self.players[1].color);
+                    render_board.set(
+                        self.players[0].position.0,
+                        self.players[0].position.1,
+                        blended_color,
+                    );
+                } else {
+                    for player in &self.players {
+                        render_board.set(player.position.0, player.position.1, player.color);
+                    }
                 }
             }
         }
