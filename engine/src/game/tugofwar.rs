@@ -5,10 +5,9 @@ use crate::{GameError, RenderBoard};
 use core::time::Duration;
 
 const GRID_SIZE: usize = 12;
-const MAX_PLAYERS: usize = 2;
 const GAME_OVER_ANIMATION_SPEED: Duration = Duration::from_millis(50);
 const COUNTDOWN_DURATION: Duration = Duration::from_secs(1);
-const WIN_THRESHOLD: i32 = 12; // Easily modifiable win condition
+const WIN_THRESHOLD: i32 = 12; // Lower this for a shorter game
 
 #[derive(Debug, PartialEq)]
 enum GameState {
