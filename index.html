@@ -4,9 +4,17 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Teotile</title>
+	<title>Teotile Web UI</title>
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/img/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+
 	<link rel="stylesheet" href="styles.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+
 </head>
 
 <body>
@@ -19,7 +27,9 @@
 			</a>
 		</header>
 		<main>
-			<canvas id="gameCanvas" width="360" height="360"></canvas>
+			<div id="canvasContainer">
+				<canvas id="gameCanvas"></canvas>
+			</div>
 			<div class="controls">
 				<div class="player">
 					<h2>Player 1</h2>
@@ -42,6 +52,24 @@
 						<div class="control-item"><span class="key">Enter/M</span>Select</div>
 						<div class="control-item"><span class="key">Backspace</span>Quit</div>
 					</div>
+				</div>
+			</div>
+			<div class="mobile-gamepad">
+				<div class="directional-pad">
+					<button class="gamepad-btn up" data-key="w" data-command="0"
+						data-player="1">↑</button>
+					<button class="gamepad-btn left" data-key="a" data-command="2"
+						data-player="1">←</button>
+					<button class="gamepad-btn right" data-key="d" data-command="3"
+						data-player="1">→</button>
+					<button class="gamepad-btn down" data-key="s" data-command="1"
+						data-player="1">↓</button>
+				</div>
+				<div class="action-buttons">
+					<button class="gamepad-btn" data-key="e" data-command="4"
+						data-player="1">Select</button>
+					<button class="gamepad-btn" data-key="q" data-command="5"
+						data-player="1">Quit</button>
 				</div>
 			</div>
 		</main>
