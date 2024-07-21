@@ -6,40 +6,48 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Teotile Web UI</title>
 	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 
 <body>
 	<div class="container">
-		<h1>Teotile Web UI</h1>
-		<canvas id="gameCanvas" width="360" height="360"></canvas>
-		<div class="controls">
-			<div class="player">
-				<h2>Player 1</h2>
-				<p>W: Up, A: Left, S: Down, D: Right, E/R: Select, Q/F: Quit</p>
+		<header>
+			<h1>Teotile</h1>
+			<a href="https://github.com/kottz/teotile" class="github-link" target="_blank"
+				rel="noopener noreferrer">
+				<i class="fab fa-github"></i>
+			</a>
+		</header>
+		<main>
+			<canvas id="gameCanvas" width="360" height="360"></canvas>
+			<div class="controls">
+				<div class="player">
+					<h2>Player 1</h2>
+					<div class="control-grid">
+						<div class="control-item"><span class="key">W</span>Up</div>
+						<div class="control-item"><span class="key">A</span>Left</div>
+						<div class="control-item"><span class="key">S</span>Down</div>
+						<div class="control-item"><span class="key">D</span>Right</div>
+						<div class="control-item"><span class="key">E/R</span>Select</div>
+						<div class="control-item"><span class="key">Q/F</span>Quit</div>
+					</div>
+				</div>
+				<div class="player">
+					<h2>Player 2</h2>
+					<div class="control-grid">
+						<div class="control-item"><span class="key">↑</span>Up</div>
+						<div class="control-item"><span class="key">←</span>Left</div>
+						<div class="control-item"><span class="key">↓</span>Down</div>
+						<div class="control-item"><span class="key">→</span>Right</div>
+						<div class="control-item"><span class="key">Enter/M</span>Select</div>
+						<div class="control-item"><span class="key">Backspace</span>Quit</div>
+					</div>
+				</div>
 			</div>
-			<div class="player">
-				<h2>Player 2</h2>
-				<p>↑: Up, ←: Left, ↓: Down, →: Right, Enter/M: Select, Backspace: Quit</p>
-			</div>
-		</div>
-		<div class="mobile-gamepad">
-			<div class="directional-pad">
-				<button class="gamepad-btn up" data-key="w" data-command="0"
-					data-player="1">↑</button>
-				<button class="gamepad-btn left" data-key="a" data-command="2"
-					data-player="1">←</button>
-				<button class="gamepad-btn right" data-key="d" data-command="3"
-					data-player="1">→</button>
-				<button class="gamepad-btn down" data-key="s" data-command="1"
-					data-player="1">↓</button>
-			</div>
-			<div class="action-buttons">
-				<button class="gamepad-btn" data-key="e" data-command="4"
-					data-player="1">Select</button>
-				<button class="gamepad-btn" data-key="q" data-command="5"
-					data-player="1">Quit</button>
-			</div>
-		</div>
+		</main>
+		<footer>
+			<p>© 2024 kottz</p>
+		</footer>
 	</div>
 	<script type="module" src="index.js"></script>
 </body>

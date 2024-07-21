@@ -5,12 +5,19 @@ let canvas;
 let ctx;
 const GRID_SIZE = 12;
 const CELL_SIZE = 30;
+const CIRCLE_RADIUS = 10;
+const CIRCLE_SPACING = 5;
 
 async function initialize() {
     await init();
     game = new GameWrapper();
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
+
+    // Increase canvas size to accommodate spaced circles
+    canvas.width = (CELL_SIZE + CIRCLE_SPACING) * GRID_SIZE;
+    canvas.height = (CELL_SIZE + CIRCLE_SPACING) * GRID_SIZE;
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     setupMobileGamepad();
@@ -23,7 +30,6 @@ function setupMobileGamepad() {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const key = button.getAttribute('data-key');
-		console.log(key);
             processInput({ key }, 0);
         });
         button.addEventListener('touchend', (e) => {
@@ -74,9 +80,17 @@ function gameLoop(timestamp) {
     requestAnimationFrame(gameLoop);
 }
 
+// Create the offscreen canvas once and reuse it
+const offscreenCanvas = document.createElement('canvas');
+offscreenCanvas.width = GRID_SIZE;
+offscreenCanvas.height = GRID_SIZE;
+const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+
 function render() {
     const pixelData = game.render();
-    const imageData = ctx.createImageData(GRID_SIZE, GRID_SIZE);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const imageData = offscreenCtx.createImageData(GRID_SIZE, GRID_SIZE);
     for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
             const rotatedIndex = ((GRID_SIZE - 1 - x) * GRID_SIZE + y) * 4;
@@ -87,9 +101,25 @@ function render() {
             imageData.data[rotatedIndex + 3] = 255;
         }
     }
-    ctx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(canvas, 0, 0, GRID_SIZE, GRID_SIZE, 0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE);
+
+    offscreenCtx.putImageData(imageData, 0, 0);
+
+    // Draw circles based on the rotated image data
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const color = offscreenCtx.getImageData(x, y, 1, 1).data;
+            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+            ctx.beginPath();
+            ctx.arc(
+                x * (CELL_SIZE + CIRCLE_SPACING) + CELL_SIZE / 2,
+                y * (CELL_SIZE + CIRCLE_SPACING) + CELL_SIZE / 2,
+                CIRCLE_RADIUS,
+                0,
+                2 * Math.PI
+            );
+            ctx.fill();
+        }
+    }
 }
 
 initialize();
