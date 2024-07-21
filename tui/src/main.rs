@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::{self, stdout};
 use std::time::Instant;
 use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RenderBoard, RGB};
@@ -131,7 +130,7 @@ fn ui(frame: &mut Frame, app: &App) {
     )
     .split(main_layout[1]);
     frame.render_widget(Block::bordered().title("Grid"), inner_layout[0]);
-    frame.render_widget(Block::bordered().title("Player Input"), inner_layout[1]);
+    frame.render_widget(Block::bordered().title("Player Controls"), inner_layout[1]);
     let player_layout = Layout::new(
         Direction::Horizontal,
         [Constraint::Percentage(50), Constraint::Percentage(50)],
@@ -141,11 +140,15 @@ fn ui(frame: &mut Frame, app: &App) {
     let grid_space = create_grid_layout(&inner_layout[0]);
     frame.render_widget(app.grid.grid_canvas(), grid_space);
 
-    for (i, pl) in player_layout.iter().enumerate() {
-        let player_string = format!("Player {}", i + 1);
-        let player_input = PlayerInput::new().name(player_string.as_str());
-        frame.render_widget(player_input.create_widget(), *pl);
-    }
+    let player1_input = PlayerInput::new()
+        .name("Player 1")
+        .controls(&PLAYER1_CONTROLS);
+    let player2_input = PlayerInput::new()
+        .name("Player 2")
+        .controls(&PLAYER2_CONTROLS);
+
+    frame.render_widget(player1_input.create_widget(), player_layout[0]);
+    frame.render_widget(player2_input.create_widget(), player_layout[1]);
 }
 
 fn create_grid_layout(input_area: &Rect) -> Rect {
@@ -222,31 +225,35 @@ impl App {
     }
 }
 
-const BUTTONS: [(&str, bool); 8] = [
-    ("up", false),
-    ("down", false),
-    ("left", false),
-    ("right", false),
-    ("a", false),
-    ("b", false),
-    ("start", false),
-    ("select", false),
+const PLAYER1_CONTROLS: [(&str, &str); 6] = [
+    ("Move Up", "W"),
+    ("Move Down", "S"),
+    ("Move Left", "A"),
+    ("Move Right", "D"),
+    ("Select", "E/R"),
+    ("Quit", "Q/F"),
+];
+
+const PLAYER2_CONTROLS: [(&str, &str); 6] = [
+    ("Move Up", "↑"),
+    ("Move Down", "↓"),
+    ("Move Left", "←"),
+    ("Move Right", "→"),
+    ("Select", "Enter/M"),
+    ("Quit", "Backspace"),
 ];
 
 struct PlayerInput {
     name: String,
-    buttons: HashMap<String, bool>,
+    controls: Vec<(String, String)>,
 }
 
 impl PlayerInput {
     fn new() -> Self {
-        let name = "Player".to_string();
-        let buttons = BUTTONS
-            .iter()
-            .cloned()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect();
-        Self { name, buttons }
+        Self {
+            name: "Player".to_string(),
+            controls: Vec::new(),
+        }
     }
 
     fn name(mut self, name: &str) -> Self {
@@ -254,14 +261,35 @@ impl PlayerInput {
         self
     }
 
+    fn controls(mut self, controls: &[(&str, &str)]) -> Self {
+        self.controls = controls
+            .iter()
+            .map(|&(action, key)| (action.to_string(), key.to_string()))
+            .collect();
+        self
+    }
+
     fn create_widget(&self) -> impl Widget + '_ {
-        let button_map = self.buttons.iter().map(|(k, v)| format!("{}: {}", k, v));
-        let mut button_vec = button_map.collect::<Vec<String>>();
-        button_vec.sort();
-        List::new(button_vec)
+        let max_action_length = self
+            .controls
+            .iter()
+            .map(|(action, _)| action.len())
+            .max()
+            .unwrap_or(0);
+
+        let controls = self.controls.iter().map(|(action, key)| {
+            let padded_line = format!(
+                "{:<width$} {}",
+                format!("{}:", action),
+                key,
+                width = max_action_length + 1
+            );
+            ListItem::new(padded_line)
+        });
+
+        List::new(controls)
             .block(Block::bordered().title(self.name.as_str()))
             .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-            .highlight_symbol(">>")
-            .repeat_highlight_symbol(true)
+            .highlight_symbol(">> ")
     }
 }
