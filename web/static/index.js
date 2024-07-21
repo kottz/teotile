@@ -4,9 +4,14 @@ let game;
 let canvas;
 let ctx;
 const GRID_SIZE = 12;
-const CELL_SIZE = 30;
-const CIRCLE_RADIUS = 10;
-const CIRCLE_SPACING = 5;
+let CELL_SIZE;
+let CIRCLE_RADIUS;
+let CIRCLE_SPACING;
+
+const offscreenCanvas = document.createElement('canvas');
+offscreenCanvas.width = GRID_SIZE;
+offscreenCanvas.height = GRID_SIZE;
+const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
 async function initialize() {
     await init();
@@ -14,14 +19,31 @@ async function initialize() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
 
-    // Increase canvas size to accommodate spaced circles
-    canvas.width = (CELL_SIZE + CIRCLE_SPACING) * GRID_SIZE;
-    canvas.height = (CELL_SIZE + CIRCLE_SPACING) * GRID_SIZE;
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     setupMobileGamepad();
     requestAnimationFrame(gameLoop);
+}
+
+function resizeCanvas() {
+    const container = document.getElementById('canvasContainer');
+    const containerWidth = container.clientWidth;
+    const viewportHeight = window.innerHeight;
+
+    const maxDesktopSize = 420;
+    const maxSize = Math.min(containerWidth, viewportHeight - 200, maxDesktopSize);
+
+    CELL_SIZE = Math.floor(maxSize / GRID_SIZE);
+    CIRCLE_RADIUS = Math.floor(CELL_SIZE * 0.3);
+    CIRCLE_SPACING = Math.floor(CELL_SIZE * 0.4);
+
+    canvas.width = CELL_SIZE * GRID_SIZE;
+    canvas.height = CELL_SIZE * GRID_SIZE;
+
+    render();
 }
 
 function setupMobileGamepad() {
@@ -80,12 +102,6 @@ function gameLoop(timestamp) {
     requestAnimationFrame(gameLoop);
 }
 
-// Create the offscreen canvas once and reuse it
-const offscreenCanvas = document.createElement('canvas');
-offscreenCanvas.width = GRID_SIZE;
-offscreenCanvas.height = GRID_SIZE;
-const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
-
 function render() {
     const pixelData = game.render();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -111,8 +127,8 @@ function render() {
             ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
             ctx.beginPath();
             ctx.arc(
-                x * (CELL_SIZE + CIRCLE_SPACING) + CELL_SIZE / 2,
-                y * (CELL_SIZE + CIRCLE_SPACING) + CELL_SIZE / 2,
+                x * CELL_SIZE + CELL_SIZE / 2,
+                y * CELL_SIZE + CELL_SIZE / 2,
                 CIRCLE_RADIUS,
                 0,
                 2 * Math.PI
