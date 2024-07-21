@@ -1,6 +1,6 @@
 use crate::{
     animation::Animation,
-    game::{CommandType, Game, GameCommand, RenderBoard, RGB},
+    game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB},
     GameError, Player as GamePlayer,
 };
 
@@ -212,37 +212,39 @@ impl Game for MazeGame {
     fn process_input(&mut self, input: GameCommand) -> Result<(), GameError> {
         match &mut self.state {
             MazeGameState::Playing => {
-                let (dx, dy) = match input.command_type {
-                    CommandType::Left => (-1, 0),
-                    CommandType::Right => (1, 0),
-                    CommandType::Up => (0, 1),
-                    CommandType::Down => (0, -1),
-                    _ => (0, 0),
-                };
+                if let ButtonState::Pressed = input.button_state {
+                    let (dx, dy) = match input.command_type {
+                        CommandType::Left => (-1, 0),
+                        CommandType::Right => (1, 0),
+                        CommandType::Up => (0, 1),
+                        CommandType::Down => (0, -1),
+                        _ => (0, 0),
+                    };
 
-                let player_index = match (self.mode, input.player) {
-                    (MazeGameMode::Normal | MazeGameMode::FlashLight, _) => 0,
-                    (_, GamePlayer::Player1) => 0,
-                    (_, GamePlayer::Player2) => 1,
-                };
+                    let player_index = match (self.mode, input.player) {
+                        (MazeGameMode::Normal | MazeGameMode::FlashLight, _) => 0,
+                        (_, GamePlayer::Player1) => 0,
+                        (_, GamePlayer::Player2) => 1,
+                    };
 
-                if let Some(player) = self.players.get_mut(player_index) {
-                    let (x, y) = player.position;
-                    let nx = x as isize + dx;
-                    let ny = y as isize + dy;
+                    if let Some(player) = self.players.get_mut(player_index) {
+                        let (x, y) = player.position;
+                        let nx = x as isize + dx;
+                        let ny = y as isize + dy;
 
-                    if nx >= 0
-                        && nx < GRID_SIZE as isize
-                        && ny >= 0
-                        && ny < GRID_SIZE as isize
-                        && self.board.tiles[nx as usize][ny as usize] != MazeTile::Wall
-                    {
-                        player.position = (nx as usize, ny as usize);
-                    }
+                        if nx >= 0
+                            && nx < GRID_SIZE as isize
+                            && ny >= 0
+                            && ny < GRID_SIZE as isize
+                            && self.board.tiles[nx as usize][ny as usize] != MazeTile::Wall
+                        {
+                            player.position = (nx as usize, ny as usize);
+                        }
 
-                    if player.position == self.exit_pos {
-                        self.state = MazeGameState::Victory(Duration::ZERO);
-                        self.winning_player = Some(player_index);
+                        if player.position == self.exit_pos {
+                            self.state = MazeGameState::Victory(Duration::ZERO);
+                            self.winning_player = Some(player_index);
+                        }
                     }
                 }
             }
