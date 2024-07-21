@@ -114,8 +114,8 @@ impl Game for ButtonWar {
                     CountdownState::Green => RGB::new(0, 255, 0),
                 };
                 // Render countdown light in the center
-                for i in GRID_SIZE / 2 - 1..=GRID_SIZE / 2 + 1 {
-                    for j in GRID_SIZE / 2 - 1..=GRID_SIZE / 2 + 1 {
+                for i in GRID_SIZE / 2 - 4..=GRID_SIZE / 2 + 3 {
+                    for j in GRID_SIZE / 2 - 4..=GRID_SIZE / 2 + 3 {
                         render_board.set(i, j, color);
                     }
                 }
