@@ -11,7 +11,10 @@ mkdir -p dist
 cp -r pkg dist/
 
 # Copy static files
-cp static/* dist/
+cp -r static/* dist/
+
+# Copy images
+#cp -r static/img dist/
 
 # To prevent github action from skipping
 rm dist/pkg/.gitignore
