@@ -4,6 +4,11 @@ set -e
 # Build the Wasm package
 wasm-pack build --target web
 
+# remove dist directory if it exists
+if [ ! -d "dist" ]; then
+  rm -rf dist
+fi
+
 # Create a dist directory
 mkdir -p dist
 
@@ -12,9 +17,6 @@ cp -r pkg dist/
 
 # Copy static files
 cp -r static/* dist/
-
-# Copy images
-#cp -r static/img dist/
 
 # To prevent github action from skipping
 rm dist/pkg/.gitignore
