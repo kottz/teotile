@@ -17,7 +17,6 @@ use output::{DebugOutput, Output};
 const TARGET_FPS: u64 = 60;
 const FRAME_DURATION: Duration = Duration::from_nanos(1_000_000_000 / TARGET_FPS);
 const LED_COUNT: i32 = 144; // 12x12 grid
-const LED_PIN: i32 = 10; // GPIO pin number
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -25,6 +24,10 @@ struct Args {
     /// Enable debug output
     #[clap(short, long)]
     debug: bool,
+
+    /// led pin number
+    #[clap(short, long, default_value = "10")]
+    led_pin: i32,
 }
 
 fn main() -> Result<()> {
@@ -46,7 +49,7 @@ fn main() -> Result<()> {
     let mut output: Box<dyn Output> = if args.debug {
         Box::new(DebugOutput)
     } else {
-        Box::new(LedStrip::new(LED_PIN, LED_COUNT).context("Failed to initialize LED strip")?)
+        Box::new(LedStrip::new(args.led_pin, LED_COUNT).context("Failed to initialize LED strip")?)
     };
     let mut prev_instant = Instant::now();
 
@@ -69,25 +72,22 @@ fn main() -> Result<()> {
                 }
                 _ => {
                     if let Some(command) = gamepad_event_to_command(event) {
-                        engine.process_input(command);
+                        let _ = engine.process_input(command);
                     }
                 }
             }
         }
 
-        // Calculate delta time
         let current_instant = Instant::now();
         let delta = current_instant - prev_instant;
         prev_instant = current_instant;
 
-        // Update game state
-        engine.update(delta);
+        let _ = engine.update(delta);
 
-        // Render to output
         let render_board = engine.render().unwrap();
-        output.render(&render_board);
+        let _ = output.render(&render_board);
 
-        // Calculate how long to sleep to maintain target FPS
+        // Maintain target FPS
         let elapsed = loop_start.elapsed();
         if elapsed < FRAME_DURATION {
             std::thread::sleep(FRAME_DURATION - elapsed);
