@@ -4,7 +4,7 @@ Teotile is a simple game engine that can run simple pixel games. It was primaril
 
 Teotile can be used alone or with a friend. There are both single-player and two-player games.
 
-It is a useful software base for a *"play Snake on your bookshelf"* or *"Flappy Bird on your Christmas tree"* style application.
+It is a useful software base for a *"Snake on your bookshelf"* or *"Flappy Bird on your Christmas tree"* style application.
 
 ## Games
 
