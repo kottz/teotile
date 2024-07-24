@@ -1,6 +1,6 @@
 # Teotile
 
-Teotile is a simple game engine that can run simple pixel games. It was primarily designed to run on a 12x12 LED pixel grid using a WS281x LED. However, the code is portable enough to run on anything thatcan process input commands and output a grid of RGB pixels.
+Teotile is a simple game engine that can run simple pixel games. It was primarily designed to run on a 12x12 LED pixel grid using a WS281x LED. However, the code is portable enough to run on anything that can process input commands and output a grid of RGB pixels.
 
 Teotile can be used alone or with a friend. There are both single-player and two-player games.
 
