@@ -98,6 +98,7 @@ pub enum Player {
     Player1,
     Player2,
 }
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Board<T, const COLS: usize, const ROWS: usize> {
     pub cells: [[T; ROWS]; COLS],
