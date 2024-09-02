@@ -6,6 +6,8 @@ Teotile can be used alone or with a friend. There are both single-player and two
 
 It is a useful software base for a *"Snake on your bookshelf"* or *"Flappy Bird on your Christmas tree"* style application.
 
+[![Teotile demo video](https://img.youtube.com/vi/Tbj6UPhgOsM/0.jpg)](https://www.youtube.com/watch?v=Tbj6UPhgOsM)
+
 ## Games
 
 - **Connect Four** 
