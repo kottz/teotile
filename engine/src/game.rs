@@ -150,13 +150,6 @@ impl<T: Game> GameEngine<T> {
     }
 
     pub fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
-        // TODO
-        // Intercept input here before sending to game
-        // to allow quitting the running game and returning to the main menu
-        // aka if input_command.command_type == CommandType::Quit
-        // then return to main menu
-        //
-        // This functionality is currently handled by the main menu game
         self.game.process_input(input_command)
     }
 
