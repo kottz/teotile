@@ -9,6 +9,7 @@ use crate::game::DoodleJump;
 use crate::game::FlappyBird;
 use crate::game::GameMode;
 use crate::game::MultiplayerShooter;
+use crate::game::PaintGame;
 use crate::game::PongGame;
 use crate::game::SpaceInvaders;
 use crate::game::TetrisGame;
@@ -16,12 +17,10 @@ use crate::game::TicTacToe;
 use crate::game::WallDodger;
 use crate::game::{MazeGame, MazeGameMode};
 use crate::game::{SnakeGame, SnakeGameMode};
-use crate::game::PaintGame;
 
 use crate::pixel_art;
 
 use crate::GRID_SIZE;
-
 
 const NUM_GAMES: usize = 19;
 
@@ -143,19 +142,11 @@ impl Menu {
     }
 
     fn cycle_left(&mut self) {
-        if self.active_game_index > 0 {
-            self.active_game_index -= 1;
-        } else {
-            self.active_game_index = NUM_GAMES - 1;
-        }
+        self.active_game_index = (self.active_game_index + NUM_GAMES - 1) % NUM_GAMES;
     }
 
     fn cycle_right(&mut self) {
-        if self.active_game_index < NUM_GAMES - 1 {
-            self.active_game_index += 1;
-        } else {
-            self.active_game_index = 0;
-        }
+        self.active_game_index = (self.active_game_index + 1) % NUM_GAMES;
     }
 
     fn get_game_type_from_index(&self) -> GameTypeInfo {
