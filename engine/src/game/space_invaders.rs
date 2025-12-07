@@ -124,8 +124,15 @@ impl SpaceInvaders {
     fn shoot_projectile(&mut self, player: Player) {
         const FIRE_SPEED: f64 = 10.0;
         if let Some(spaceship) = self.spaceships.iter().find(|s| s.player == player) {
-            self.projectiles
-                .push(Projectile::new(1, spaceship.col, 1, FIRE_SPEED));
+            let shooting_blocked = self
+                .projectiles
+                .iter()
+                .any(|p| p.active && p.col == spaceship.col && p.direction == 1 && p.row < 2.0);
+
+            if !shooting_blocked {
+                self.projectiles
+                    .push(Projectile::new(1, spaceship.col, 1, FIRE_SPEED));
+            }
         }
     }
 
