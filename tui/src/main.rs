@@ -91,8 +91,7 @@ fn handle_events() -> io::Result<Option<GameCommand>> {
                     GameCommand::new(CommandType::Quit, button_state, Player::Player2)
                 }
                 KeyCode::Esc | KeyCode::Char('u') => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
+                    return Err(io::Error::other(
                         "Escape key pressed, quitting",
                     ))
                 }

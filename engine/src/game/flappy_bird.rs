@@ -171,7 +171,7 @@ impl Game for FlappyBird {
                     || self
                         .walls
                         .last()
-                        .map_or(false, |w| w.col == GRID_SIZE - self.wall_gap)
+                        .is_some_and(|w| w.col == GRID_SIZE - self.wall_gap)
                 {
                     self.add_wall();
                 }

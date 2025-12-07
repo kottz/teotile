@@ -8,7 +8,9 @@ const COLOR_ROW: usize = GRID_SIZE - 1;
 const CANVAS_SIZE: usize = GRID_SIZE;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum Color {
+    #[default]
     Empty,
     Red,
     Green,
@@ -23,11 +25,6 @@ pub enum Color {
     White,
 }
 
-impl Default for Color {
-    fn default() -> Self {
-        Color::Empty
-    }
-}
 
 impl Color {
     fn to_rgb(&self) -> RGB {

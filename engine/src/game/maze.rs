@@ -64,7 +64,7 @@ impl MazeBoard {
     fn new(seed: u64) -> Self {
         let mut tiles = [[MazeTile::Wall; GRID_SIZE]; GRID_SIZE];
         let mut size = GRID_SIZE;
-        if GRID_SIZE % 2 == 0 {
+        if GRID_SIZE.is_multiple_of(2) {
             size += 1;
         }
         let mut rng = CustomRng::seed_from_u64(seed);

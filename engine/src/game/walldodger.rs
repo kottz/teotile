@@ -170,7 +170,7 @@ impl WallDodger {
     }
 
     fn level_up(&mut self) {
-        if self.walls_passed % WALLS_PER_COLOR == 0 {
+        if self.walls_passed.is_multiple_of(WALLS_PER_COLOR) {
             self.color_index += 1;
             self.wall_period *= 0.9; // Increase speed by 10% every 5 walls
         }
@@ -264,7 +264,7 @@ impl Game for WallDodger {
                     || self
                         .walls
                         .last()
-                        .map_or(false, |w| w.col == GRID_SIZE - self.wall_gap)
+                        .is_some_and(|w| w.col == GRID_SIZE - self.wall_gap)
                 {
                     self.add_wall();
                 }

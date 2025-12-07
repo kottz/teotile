@@ -306,7 +306,7 @@ impl Game for DoodleJump {
                 while self
                     .platforms
                     .last()
-                    .map_or(true, |p| p.y < (self.camera_offset + GRID_SIZE * 2) as f64)
+                    .is_none_or(|p| p.y < (self.camera_offset + GRID_SIZE * 2) as f64)
                 {
                     self.generate_platform();
                 }
