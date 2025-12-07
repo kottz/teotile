@@ -7,8 +7,7 @@ const GRID_SIZE: usize = 12;
 const COLOR_ROW: usize = GRID_SIZE - 1;
 const CANVAS_SIZE: usize = GRID_SIZE;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Color {
     #[default]
     Empty,
@@ -25,9 +24,8 @@ pub enum Color {
     White,
 }
 
-
 impl Color {
-    fn to_rgb(&self) -> RGB {
+    fn as_rgb(&self) -> RGB {
         match self {
             Color::Empty => RGB::new(0, 0, 0),
             Color::Red => RGB::new(255, 0, 0),
@@ -98,13 +96,13 @@ impl Game for PaintGame {
 
         for y in 0..COLOR_ROW {
             for x in 0..CANVAS_SIZE {
-                render_board.set(x, y, self.board.get(x, y).to_rgb());
+                render_board.set(x, y, self.board.get(x, y).as_rgb());
             }
         }
 
         for x in 0..GRID_SIZE {
             let color = self.get_color_from_palette(x);
-            render_board.set(x, COLOR_ROW, color.to_rgb());
+            render_board.set(x, COLOR_ROW, color.as_rgb());
         }
 
         let cursor_color = self.get_cursor_color();
@@ -147,7 +145,7 @@ impl PaintGame {
         }
 
         let underlying_color = self.board.get(self.cursor.0, self.cursor.1);
-        let selected_rgb = self.selected_color.to_rgb();
+        let selected_rgb = self.selected_color.as_rgb();
 
         if self.selected_color == underlying_color {
             let r = selected_rgb.r.saturating_sub(128);
