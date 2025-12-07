@@ -1,5 +1,5 @@
-use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::RGB;
+use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
 

@@ -1,6 +1,6 @@
 use gilrs::{Button, Event, EventType, Gilrs};
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread;
 
 pub enum GamepadEvent {

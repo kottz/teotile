@@ -1,8 +1,8 @@
+use crate::GameError;
 use crate::animation::Animation;
 use crate::game::{
-    ButtonState, CommandType, Game, GameCommand, Player as GamePlayer, RenderBoard, RGB,
+    ButtonState, CommandType, Game, GameCommand, Player as GamePlayer, RGB, RenderBoard,
 };
-use crate::GameError;
 
 use crate::random::CustomRng;
 use core::time::Duration;
@@ -310,16 +310,15 @@ impl Game for WallDodger {
                     render_board.set(self.players[0].col, self.players[0].row, blended_color);
                 }
 
-                if let GameState::GameOver = self.state {
-                    if let Some(first_wall) = self.walls.first() {
-                        if first_wall.col == 0 {
-                            let color = self.game_over_animation.get_color();
-                            for row in (0..first_wall.gap_row)
-                                .chain(first_wall.gap_row + first_wall.gap_size..GRID_SIZE)
-                            {
-                                render_board.set(0, row, color);
-                            }
-                        }
+                if let GameState::GameOver = self.state
+                    && let Some(first_wall) = self.walls.first()
+                    && first_wall.col == 0
+                {
+                    let color = self.game_over_animation.get_color();
+                    for row in (0..first_wall.gap_row)
+                        .chain(first_wall.gap_row + first_wall.gap_size..GRID_SIZE)
+                    {
+                        render_board.set(0, row, color);
                     }
                 }
             }

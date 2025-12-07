@@ -1,6 +1,6 @@
-use crate::animation::Animation;
-use crate::game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB};
 use crate::GameError;
+use crate::animation::Animation;
+use crate::game::{ButtonState, CommandType, Game, GameCommand, RGB, RenderBoard};
 
 use crate::random::CustomRng;
 use core::time::Duration;
@@ -192,16 +192,15 @@ impl Game for FlappyBird {
             }
         }
 
-        if let GameState::GameOver = self.state {
-            if let Some(first_wall) = self.walls.first() {
-                if first_wall.col == 0 {
-                    let color = self.game_over_animation.get_color();
-                    for row in (0..first_wall.gap_row)
-                        .chain(first_wall.gap_row + first_wall.gap_size..GRID_SIZE)
-                    {
-                        render_board.set(0, row, color);
-                    }
-                }
+        if let GameState::GameOver = self.state
+            && let Some(first_wall) = self.walls.first()
+            && first_wall.col == 0
+        {
+            let color = self.game_over_animation.get_color();
+            for row in
+                (0..first_wall.gap_row).chain(first_wall.gap_row + first_wall.gap_size..GRID_SIZE)
+            {
+                render_board.set(0, row, color);
             }
         }
 

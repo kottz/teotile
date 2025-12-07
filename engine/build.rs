@@ -1,5 +1,5 @@
-use image::io::Reader as ImageReader;
 use image::GenericImageView;
+use image::io::Reader as ImageReader;
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;

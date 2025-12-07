@@ -1,6 +1,6 @@
+use crate::RGB;
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
-use crate::RGB;
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
 
@@ -80,12 +80,11 @@ impl ButtonWar {
 
 impl Game for ButtonWar {
     fn process_input(&mut self, input_command: GameCommand) -> Result<(), GameError> {
-        if let GameState::Playing = self.state {
-            if let (ButtonState::Pressed, CommandType::Select) =
+        if let GameState::Playing = self.state
+            && let (ButtonState::Pressed, CommandType::Select) =
                 (input_command.button_state, input_command.command_type)
-            {
-                self.update_score(input_command.player);
-            }
+        {
+            self.update_score(input_command.player);
         }
         Ok(())
     }

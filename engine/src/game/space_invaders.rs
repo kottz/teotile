@@ -1,7 +1,7 @@
+use crate::RGB;
 use crate::animation::Animation;
 use crate::game::{ButtonState, CommandType, Game, GameCommand, Player};
 use crate::random::CustomRng;
-use crate::RGB;
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
 use smallvec::SmallVec;

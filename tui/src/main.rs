@@ -1,12 +1,12 @@
 use std::io::{self, stdout};
 use std::time::Instant;
-use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RenderBoard, RGB};
+use teotile::{ButtonState, CommandType, GameCommand, GameEngine, Player, RGB, RenderBoard};
 const GRID_SIZE: usize = 12;
 
 use crossterm::{
-    event::{self, Event, KeyCode},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
+    event::{self, Event, KeyCode},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
     prelude::*,
@@ -47,59 +47,53 @@ fn main() -> io::Result<()> {
 }
 
 fn handle_events() -> io::Result<Option<GameCommand>> {
-    if event::poll(std::time::Duration::from_millis(50))? {
-        if let Event::Key(key) = event::read()? {
-            let button_state = if key.kind == event::KeyEventKind::Press {
-                ButtonState::Pressed
-            } else {
-                ButtonState::Released
-            };
+    if event::poll(std::time::Duration::from_millis(50))?
+        && let Event::Key(key) = event::read()?
+    {
+        let button_state = if key.kind == event::KeyEventKind::Press {
+            ButtonState::Pressed
+        } else {
+            ButtonState::Released
+        };
 
-            let command = match key.code {
-                KeyCode::Char('q') | KeyCode::Char('f') => {
-                    return Ok(Some(GameCommand::new(
-                        CommandType::Quit,
-                        button_state,
-                        Player::Player1,
-                    )))
-                }
-                KeyCode::Char('w') => {
-                    GameCommand::new(CommandType::Up, button_state, Player::Player1)
-                }
-                KeyCode::Char('a') => {
-                    GameCommand::new(CommandType::Left, button_state, Player::Player1)
-                }
-                KeyCode::Char('s') => {
-                    GameCommand::new(CommandType::Down, button_state, Player::Player1)
-                }
-                KeyCode::Char('d') => {
-                    GameCommand::new(CommandType::Right, button_state, Player::Player1)
-                }
-                KeyCode::Char('e') | KeyCode::Char('r') => {
-                    GameCommand::new(CommandType::Select, button_state, Player::Player1)
-                }
-                KeyCode::Up => GameCommand::new(CommandType::Up, button_state, Player::Player2),
-                KeyCode::Left => GameCommand::new(CommandType::Left, button_state, Player::Player2),
-                KeyCode::Down => GameCommand::new(CommandType::Down, button_state, Player::Player2),
-                KeyCode::Right => {
-                    GameCommand::new(CommandType::Right, button_state, Player::Player2)
-                }
-                KeyCode::Enter | KeyCode::Char('m') => {
-                    GameCommand::new(CommandType::Select, button_state, Player::Player2)
-                }
-                KeyCode::Backspace => {
-                    GameCommand::new(CommandType::Quit, button_state, Player::Player2)
-                }
-                KeyCode::Esc | KeyCode::Char('u') => {
-                    return Err(io::Error::other(
-                        "Escape key pressed, quitting",
-                    ))
-                }
-                _ => return Ok(None),
-            };
+        let command = match key.code {
+            KeyCode::Char('q') | KeyCode::Char('f') => {
+                return Ok(Some(GameCommand::new(
+                    CommandType::Quit,
+                    button_state,
+                    Player::Player1,
+                )));
+            }
+            KeyCode::Char('w') => GameCommand::new(CommandType::Up, button_state, Player::Player1),
+            KeyCode::Char('a') => {
+                GameCommand::new(CommandType::Left, button_state, Player::Player1)
+            }
+            KeyCode::Char('s') => {
+                GameCommand::new(CommandType::Down, button_state, Player::Player1)
+            }
+            KeyCode::Char('d') => {
+                GameCommand::new(CommandType::Right, button_state, Player::Player1)
+            }
+            KeyCode::Char('e') | KeyCode::Char('r') => {
+                GameCommand::new(CommandType::Select, button_state, Player::Player1)
+            }
+            KeyCode::Up => GameCommand::new(CommandType::Up, button_state, Player::Player2),
+            KeyCode::Left => GameCommand::new(CommandType::Left, button_state, Player::Player2),
+            KeyCode::Down => GameCommand::new(CommandType::Down, button_state, Player::Player2),
+            KeyCode::Right => GameCommand::new(CommandType::Right, button_state, Player::Player2),
+            KeyCode::Enter | KeyCode::Char('m') => {
+                GameCommand::new(CommandType::Select, button_state, Player::Player2)
+            }
+            KeyCode::Backspace => {
+                GameCommand::new(CommandType::Quit, button_state, Player::Player2)
+            }
+            KeyCode::Esc | KeyCode::Char('u') => {
+                return Err(io::Error::other("Escape key pressed, quitting"));
+            }
+            _ => return Ok(None),
+        };
 
-            return Ok(Some(command));
-        }
+        return Ok(Some(command));
     }
     Ok(None)
 }

@@ -1,7 +1,7 @@
-use crate::animation::Animation;
-use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::GRID_SIZE;
 use crate::RGB;
+use crate::animation::Animation;
+use crate::game::{Board, ButtonState, CommandType, Game, GameCommand};
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
 use smallvec::SmallVec;

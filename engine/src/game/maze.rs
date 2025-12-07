@@ -1,7 +1,7 @@
 use crate::{
-    animation::Animation,
-    game::{ButtonState, CommandType, Game, GameCommand, RenderBoard, RGB},
     GameError, Player as GamePlayer,
+    animation::Animation,
+    game::{ButtonState, CommandType, Game, GameCommand, RGB, RenderBoard},
 };
 
 use crate::random::CustomRng;

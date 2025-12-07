@@ -1,5 +1,5 @@
-use crate::game::{ButtonState, CommandType, Game, GameCommand};
 use crate::RGB;
+use crate::game::{ButtonState, CommandType, Game, GameCommand};
 use crate::{GameError, RenderBoard};
 use core::time::Duration;
 
@@ -251,10 +251,10 @@ impl Game for Menu {
             }
             MenuState::RunningGame(game_state) => {
                 game_state.process_input(input_command)?;
-                if let ButtonState::Pressed = input_command.button_state {
-                    if input_command.command_type == CommandType::Quit {
-                        self.state = MenuState::Selecting;
-                    }
+                if let ButtonState::Pressed = input_command.button_state
+                    && input_command.command_type == CommandType::Quit
+                {
+                    self.state = MenuState::Selecting;
                 }
             }
         }
