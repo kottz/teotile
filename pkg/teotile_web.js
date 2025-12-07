@@ -80,13 +80,6 @@ export class GameWrapper {
         wasm.__wbg_gamewrapper_free(ptr);
     }
     /**
-    */
-    constructor() {
-        const ret = wasm.gamewrapper_new();
-        this.__wbg_ptr = ret >>> 0;
-        return this;
-    }
-    /**
     * @param {number} command_type
     * @param {number} button_state
     * @param {number} player
@@ -95,10 +88,11 @@ export class GameWrapper {
         wasm.gamewrapper_process_input(this.__wbg_ptr, command_type, button_state, player);
     }
     /**
-    * @param {number} delta
     */
-    update(delta) {
-        wasm.gamewrapper_update(this.__wbg_ptr, delta);
+    constructor() {
+        const ret = wasm.gamewrapper_new();
+        this.__wbg_ptr = ret >>> 0;
+        return this;
     }
     /**
     * @returns {Uint8Array}
@@ -115,6 +109,12 @@ export class GameWrapper {
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
+    }
+    /**
+    * @param {number} delta
+    */
+    update(delta) {
+        wasm.gamewrapper_update(this.__wbg_ptr, delta);
     }
 }
 

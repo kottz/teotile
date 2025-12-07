@@ -5,22 +5,22 @@
 export class GameWrapper {
   free(): void;
 /**
-*/
-  constructor();
-/**
 * @param {number} command_type
 * @param {number} button_state
 * @param {number} player
 */
   process_input(command_type: number, button_state: number, player: number): void;
 /**
-* @param {number} delta
 */
-  update(delta: number): void;
+  constructor();
 /**
 * @returns {Uint8Array}
 */
   render(): Uint8Array;
+/**
+* @param {number} delta
+*/
+  update(delta: number): void;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -30,8 +30,8 @@ export interface InitOutput {
   readonly __wbg_gamewrapper_free: (a: number) => void;
   readonly gamewrapper_new: () => number;
   readonly gamewrapper_process_input: (a: number, b: number, c: number, d: number) => void;
-  readonly gamewrapper_update: (a: number, b: number) => void;
   readonly gamewrapper_render: (a: number, b: number) => void;
+  readonly gamewrapper_update: (a: number, b: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
 }
